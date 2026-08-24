@@ -7,23 +7,38 @@
 <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
     <div>
         <h4 class="fw-bold mb-1 text-dark"><i class="bi bi-building-check text-primary me-2"></i>Bodegas & Proveedores Dropi Colombia</h4>
-        <p class="text-muted small mb-0">Explora, visualiza y busca las bodegas mayoristas en Colombia conectadas para importación y dropshipping.</p>
+        <p class="text-muted small mb-0">Visualización y búsqueda de bodegas según la API oficial: <code class="text-primary">https://api.dropi.co/api/users/getDataProductsSuplierFilter</code></p>
     </div>
     <div class="d-flex flex-wrap gap-2">
         <form action="{{ route('admin.suppliers.sync_dropi') }}" method="POST" class="d-inline">
             @csrf
-            <button type="submit" class="btn btn-outline-primary rounded-pill px-3 shadow-sm d-flex align-items-center gap-2" title="Sincronizar proveedores desde https://app.dropi.co/dashboard/providers">
+            <button type="submit" class="btn btn-primary rounded-pill px-3 shadow-sm d-flex align-items-center gap-2 fw-bold">
                 <i class="bi bi-arrow-repeat"></i> Sincronizar API Dropi
             </button>
         </form>
-        <a href="{{ route('admin.dropi.catalog') }}" class="btn btn-primary rounded-pill px-3">
-            <i class="bi bi-cloud-arrow-down me-1"></i> Ir al Importador Dropi
+        <a href="{{ route('admin.dropi.catalog') }}" class="btn btn-outline-primary rounded-pill px-3">
+            <i class="bi bi-cloud-arrow-down me-1"></i> Ir al Catálogo
         </a>
         <button type="button" class="btn btn-success rounded-pill px-3 shadow-sm" data-bs-toggle="modal" data-bs-target="#newSupplierModal">
             <i class="bi bi-plus-lg me-1"></i> + Registrar Bodega
         </button>
     </div>
 </div>
+
+@if(!empty($apiError))
+    <div class="alert alert-warning border-0 shadow-sm rounded-4 p-3 mb-4 d-flex align-items-center justify-content-between gap-3">
+        <div class="d-flex align-items-center gap-3">
+            <i class="bi bi-exclamation-triangle-fill text-warning fs-3"></i>
+            <div>
+                <strong class="text-dark d-block small">Estado de la API de Dropi:</strong>
+                <span class="small text-muted">{{ $apiError }}</span>
+            </div>
+        </div>
+        <a href="{{ route('admin.integrations.index') }}" class="btn btn-warning btn-sm rounded-pill px-3 fw-bold text-nowrap">
+            <i class="bi bi-key-fill me-1"></i> Configurar Token API
+        </a>
+    </div>
+@endif
 
 <!-- Search & Filters -->
 <div class="card border-0 shadow-sm rounded-4 bg-white p-3 mb-4">
