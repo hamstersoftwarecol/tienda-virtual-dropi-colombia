@@ -360,6 +360,27 @@ class DropiService
         $product->is_active = true;
         $product->save();
 
+        // Also record in SupplierProduct catalog so it stays visible in the Dropi catalog
+        SupplierProduct::updateOrCreate(
+            ['dropi_id' => $product->dropi_id],
+            [
+                'name' => $product->name,
+                'sku' => $product->sku,
+                'short_description' => $product->short_description,
+                'description' => $product->description,
+                'wholesale_price' => $wholesale,
+                'suggested_price' => $salePrice,
+                'profit_margin' => $profitMargin,
+                'stock' => $product->stock,
+                'image' => $image,
+                'images' => [$image],
+                'category_name' => $category->name ?? 'General',
+                'is_imported' => true,
+                'imported_product_id' => $product->id,
+                'imported_at' => now(),
+            ]
+        );
+
         return $product;
     }
 
