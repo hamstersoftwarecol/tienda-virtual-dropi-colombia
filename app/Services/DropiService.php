@@ -460,7 +460,34 @@ class DropiService
 
                 if ($response->successful()) {
                     $json = $response->json();
-                    $extracted = $json['data'] ?? ($json['products'] ?? ($json['objects'] ?? ($json['result'] ?? ($json['body'] ?? (is_array($json) ? $json : [])))));
+                    
+                    $extracted = null;
+                    if (isset($json['objects']) && is_array($json['objects'])) {
+                        $extracted = $json['objects'];
+                    } elseif (isset($json['products']) && is_array($json['products'])) {
+                        $extracted = $json['products'];
+                    } elseif (isset($json['data']) && is_array($json['data'])) {
+                        if (isset($json['data']['objects']) && is_array($json['data']['objects'])) {
+                            $extracted = $json['data']['objects'];
+                        } elseif (isset($json['data']['products']) && is_array($json['data']['products'])) {
+                            $extracted = $json['data']['products'];
+                        } elseif (isset($json['data']['items']) && is_array($json['data']['items'])) {
+                            $extracted = $json['data']['items'];
+                        } elseif (isset($json['data']['rows']) && is_array($json['data']['rows'])) {
+                            $extracted = $json['data']['rows'];
+                        } elseif (isset($json['data']['data']) && is_array($json['data']['data'])) {
+                            $extracted = $json['data']['data'];
+                        } else {
+                            $extracted = $json['data'];
+                        }
+                    } elseif (isset($json['result']) && is_array($json['result'])) {
+                        $extracted = $json['result'];
+                    } elseif (isset($json['body']) && is_array($json['body'])) {
+                        $extracted = $json['body'];
+                    } elseif (is_array($json)) {
+                        $extracted = $json;
+                    }
+
                     if (is_array($extracted) && count($extracted) > 0) {
                         $items = $extracted;
                         break;
@@ -482,23 +509,42 @@ class DropiService
         if (count($items) > 0) {
             $synced = 0;
             foreach ($items as $item) {
-                if (empty($item['name']) && empty($item['title'])) {
+                if (!is_array($item)) {
                     continue;
                 }
 
-                $name = $item['name'] ?? $item['title'];
-                $dropiId = (string) ($item['id'] ?? ($item['product_id'] ?? Str::slug($name)));
-                $wholesale = (float) ($item['price'] ?? ($item['wholesale_price'] ?? ($item['cost'] ?? ($item['price_dropi'] ?? 0))));
-                $suggested = (float) ($item['suggested_price'] ?? ($item['sale_price'] ?? ($item['suggested_sale_price'] ?? ($wholesale * 1.4))));
-                
-                $image = $item['image'] ?? ($item['gallery'][0] ?? ($item['images'][0]['src'] ?? ($item['photo'] ?? null)));
-                if (is_array($image)) {
-                    $image = $image['url'] ?? ($image['src'] ?? null);
+                $name = $item['name'] ?? ($item['title'] ?? ($item['product_name'] ?? ($item['nombre'] ?? null)));
+                if (empty($name)) {
+                    continue;
+                }
+
+                $dropiId = (string) ($item['id'] ?? ($item['product_id'] ?? ($item['dropi_id'] ?? Str::slug($name))));
+                $wholesale = (float) ($item['price'] ?? ($item['wholesale_price'] ?? ($item['cost'] ?? ($item['price_dropi'] ?? ($item['sale_price'] ?? ($item['precio'] ?? ($item['costo'] ?? 0)))))));
+                $suggested = (float) ($item['suggested_price'] ?? ($item['suggested_sale_price'] ?? ($item['public_price'] ?? ($item['precio_sugerido'] ?? ($wholesale > 0 ? round($wholesale * 1.4, -2) : 0)))));
+                $profitMargin = max(0, $suggested - $wholesale);
+
+                $image = null;
+                if (!empty($item['gallery']) && is_array($item['gallery'])) {
+                    $first = $item['gallery'][0];
+                    $image = is_string($first) ? $first : ($first['url'] ?? ($first['src'] ?? null));
+                } elseif (!empty($item['images']) && is_array($item['images'])) {
+                    $first = $item['images'][0];
+                    $image = is_string($first) ? $first : ($first['src'] ?? ($first['url'] ?? null));
+                } elseif (!empty($item['url_image']) && is_string($item['url_image'])) {
+                    $image = $item['url_image'];
+                } elseif (!empty($item['image']) && is_string($item['image'])) {
+                    $image = $item['image'];
+                } elseif (!empty($item['photo']) && is_string($item['photo'])) {
+                    $image = $item['photo'];
+                } elseif (!empty($item['thumbnail']) && is_string($item['thumbnail'])) {
+                    $image = $item['thumbnail'];
                 }
 
                 $images = [];
                 if (!empty($item['gallery']) && is_array($item['gallery'])) {
-                    $images = $item['gallery'];
+                    foreach ($item['gallery'] as $g) {
+                        $images[] = is_string($g) ? $g : ($g['url'] ?? ($g['src'] ?? null));
+                    }
                 } elseif (!empty($item['images']) && is_array($item['images'])) {
                     foreach ($item['images'] as $img) {
                         $images[] = is_string($img) ? $img : ($img['src'] ?? ($img['url'] ?? null));
@@ -508,9 +554,10 @@ class DropiService
                     $images = [$image];
                 }
 
-                $stock = (int) ($item['stock'] ?? ($item['quantity'] ?? ($item['stock_quantity'] ?? 50)));
-                $sku = (string) ($item['sku'] ?? ('DRP-' . $dropiId));
-                $categoryName = $item['category_name'] ?? ($item['category']['name'] ?? ($item['category'] ?? 'General'));
+                $stock = (int) ($item['stock'] ?? ($item['quantity'] ?? ($item['stock_quantity'] ?? ($item['inventario'] ?? ($item['cantidad'] ?? 25)))));
+                $sku = (string) ($item['sku'] ?? ($item['code'] ?? ($item['codigo'] ?? ('DRP-' . $dropiId))));
+                
+                $categoryName = $item['category_name'] ?? ($item['category']['name'] ?? ($item['category'] ?? ($item['categoria'] ?? 'General')));
                 if (is_array($categoryName)) {
                     $categoryName = $categoryName['name'] ?? 'General';
                 }
@@ -522,12 +569,13 @@ class DropiService
                         'slug' => Str::slug($name) . '-' . Str::random(4),
                         'sku' => $sku,
                         'short_description' => $item['short_description'] ?? null,
-                        'description' => $item['description'] ?? ($item['body_html'] ?? null),
+                        'description' => $item['description'] ?? ($item['body_html'] ?? ($item['descripcion'] ?? null)),
                         'wholesale_price' => $wholesale,
                         'suggested_price' => $suggested,
+                        'profit_margin' => $profitMargin,
                         'stock' => $stock,
-                        'image' => $image,
-                        'images' => array_filter($images),
+                        'image' => $image ?: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=600',
+                        'images' => array_values(array_filter($images)),
                         'category_name' => $categoryName,
                     ]
                 );
