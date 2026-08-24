@@ -210,14 +210,20 @@
                     <!-- Import Action Button -->
                     <div class="mt-auto">
                         @if($sp->is_imported)
-                            <div class="d-grid">
-                                <a href="{{ route('admin.products.index', ['q' => $sp->sku]) }}" class="btn btn-outline-success btn-sm rounded-pill">
+                            <div class="d-flex flex-column gap-2">
+                                <a href="{{ route('admin.products.index', ['q' => $sp->sku]) }}" class="btn btn-outline-success btn-sm rounded-pill fw-semibold">
                                     <i class="bi bi-check-circle-fill me-1"></i> Ver en Tienda
                                 </a>
+                                <form action="{{ route('admin.dropi.catalog.sync_product', $sp->id) }}" method="POST">
+                                    @csrf
+                                    <button type="submit" class="btn btn-light btn-sm rounded-pill w-100 text-muted border small" title="Sincronizar precio y stock actual con Dropi">
+                                        <i class="bi bi-arrow-repeat text-primary me-1"></i> Sincronizar Stock / Precio
+                                    </button>
+                                </form>
                             </div>
                         @else
-                            <div class="d-grid">
-                                <button type="button" class="btn btn-primary btn-sm rounded-pill fw-semibold import-single-btn"
+                            <div class="d-flex flex-column gap-2">
+                                <button type="button" class="btn btn-primary btn-sm rounded-pill fw-bold import-single-btn shadow-sm"
                                         data-id="{{ $sp->id }}"
                                         data-name="{{ $sp->name }}"
                                         data-wholesale="{{ (float) $sp->wholesale_price }}"
@@ -228,8 +234,14 @@
                                         data-category="{{ $sp->category_name }}"
                                         data-short-desc="{{ $sp->short_description }}"
                                         data-description="{{ $sp->description }}">
-                                    <i class="bi bi-download me-1"></i> Personalizar e Importar
+                                    <i class="bi bi-gear-fill me-1"></i> Personalizar e Importar
                                 </button>
+                                <form action="{{ route('admin.dropi.catalog.import', $sp->id) }}" method="POST">
+                                    @csrf
+                                    <button type="submit" class="btn btn-outline-primary btn-sm rounded-pill w-100 small" title="Importar con margen sugerido">
+                                        <i class="bi bi-lightning-charge-fill text-warning me-1"></i> Importación Rápida
+                                    </button>
+                                </form>
                             </div>
                         @endif
                     </div>

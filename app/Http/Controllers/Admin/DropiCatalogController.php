@@ -41,6 +41,17 @@ class DropiCatalogController extends Controller
         return back()->with('warning', $result['message']);
     }
 
+    public function syncProduct(SupplierProduct $supplierProduct)
+    {
+        $result = $this->dropiService->syncSingleProduct($supplierProduct);
+
+        if ($result['success']) {
+            return back()->with('success', $result['message']);
+        }
+
+        return back()->with('warning', $result['message']);
+    }
+
     public function import(Request $request, int $id)
     {
         $request->validate([

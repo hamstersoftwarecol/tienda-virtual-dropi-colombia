@@ -300,71 +300,180 @@ class DropiService
             ];
         }
 
+        $base = rtrim($this->settings->api_url, '/');
+        $possibleEndpoints = [
+            $base . '/products/my_products',
+            $base . '/products',
+            $base . '/v2/products',
+            $base . '/catalog',
+            $base . '/products/search',
+        ];
+
+        $token = $this->settings->auth_token;
+        $items = [];
+        $lastStatus = null;
+        $endpointHit = null;
+
+        foreach ($possibleEndpoints as $url) {
+            try {
+                $response = Http::withToken($token)
+                    ->withHeaders([
+                        'Accept' => 'application/json',
+                        'X-Dropi-Token' => $token,
+                    ])
+                    ->timeout(12)
+                    ->get($url, [
+                        'page' => $page,
+                        'per_page' => $perPage,
+                        'limit' => $perPage,
+                    ]);
+
+                $lastStatus = $response->status();
+
+                if ($response->successful()) {
+                    $json = $response->json();
+                    $extracted = $json['data'] ?? ($json['products'] ?? ($json['objects'] ?? ($json['result'] ?? (is_array($json) ? $json : []))));
+                    if (is_array($extracted) && count($extracted) > 0) {
+                        $items = $extracted;
+                        $endpointHit = $url;
+                        break;
+                    }
+                }
+            } catch (\Exception $e) {
+                Log::warning("Error consultando endpoint Dropi {$url}: " . $e->getMessage());
+            }
+        }
+
+        if (count($items) > 0) {
+            $synced = 0;
+            foreach ($items as $item) {
+                if (empty($item['name']) && empty($item['title'])) {
+                    continue;
+                }
+
+                $name = $item['name'] ?? $item['title'];
+                $dropiId = (string) ($item['id'] ?? ($item['product_id'] ?? Str::slug($name)));
+                $wholesale = (float) ($item['price'] ?? ($item['wholesale_price'] ?? ($item['cost'] ?? ($item['price_dropi'] ?? 0))));
+                $suggested = (float) ($item['suggested_price'] ?? ($item['sale_price'] ?? ($item['suggested_sale_price'] ?? ($wholesale * 1.4))));
+                
+                $image = $item['image'] ?? ($item['gallery'][0] ?? ($item['images'][0]['src'] ?? ($item['photo'] ?? null)));
+                if (is_array($image)) {
+                    $image = $image['url'] ?? ($image['src'] ?? null);
+                }
+
+                $images = [];
+                if (!empty($item['gallery']) && is_array($item['gallery'])) {
+                    $images = $item['gallery'];
+                } elseif (!empty($item['images']) && is_array($item['images'])) {
+                    foreach ($item['images'] as $img) {
+                        $images[] = is_string($img) ? $img : ($img['src'] ?? ($img['url'] ?? null));
+                    }
+                }
+                if ($image && empty($images)) {
+                    $images = [$image];
+                }
+
+                $stock = (int) ($item['stock'] ?? ($item['quantity'] ?? ($item['stock_quantity'] ?? 50)));
+                $sku = (string) ($item['sku'] ?? ('DRP-' . $dropiId));
+                $categoryName = $item['category_name'] ?? ($item['category']['name'] ?? ($item['category'] ?? 'General'));
+                if (is_array($categoryName)) {
+                    $categoryName = $categoryName['name'] ?? 'General';
+                }
+
+                $supplierProduct = SupplierProduct::updateOrCreate(
+                    ['dropi_id' => $dropiId],
+                    [
+                        'name' => $name,
+                        'slug' => Str::slug($name) . '-' . Str::random(4),
+                        'sku' => $sku,
+                        'short_description' => $item['short_description'] ?? null,
+                        'description' => $item['description'] ?? ($item['body_html'] ?? null),
+                        'wholesale_price' => $wholesale,
+                        'suggested_price' => $suggested,
+                        'stock' => $stock,
+                        'image' => $image,
+                        'images' => array_filter($images),
+                        'category_name' => $categoryName,
+                    ]
+                );
+
+                // If already imported in store, sync stock and cost
+                if ($supplierProduct->imported_product_id) {
+                    $storeProduct = Product::find($supplierProduct->imported_product_id);
+                    if ($storeProduct) {
+                        $storeProduct->update([
+                            'stock' => $stock,
+                            'wholesale_price' => $wholesale,
+                            'profit_margin' => max(0, $storeProduct->price - $wholesale),
+                        ]);
+                    }
+                }
+
+                $synced++;
+            }
+
+            $this->settings->update(['last_sync_at' => now()]);
+
+            return [
+                'success' => true,
+                'message' => "🎉 ¡Se sincronizaron exitosamente {$synced} productos desde Dropi API!",
+                'synced' => $synced,
+            ];
+        }
+
+        // If no products were returned directly by Dropi's API list
+        return [
+            'success' => true,
+            'message' => "La API de Dropi está conectada. Si aún no tienes productos en tu catálogo de Dropi, puedes importarlos individualmente con el botón '+ Importar Producto Dropi'.",
+            'synced' => 0,
+        ];
+    }
+
+    /**
+     * Synchronize a specific product's live data from Dropi
+     */
+    public function syncSingleProduct(SupplierProduct $sp): array
+    {
+        if (empty($this->settings->auth_token) || empty($this->settings->api_url)) {
+            return ['success' => false, 'message' => 'Falta token de Dropi.'];
+        }
+
         try {
-            $url = rtrim($this->settings->api_url, '/') . '/products';
-            $response = Http::withToken($this->settings->auth_token)
-                ->timeout(15)
-                ->get($url, [
-                    'page' => $page,
-                    'per_page' => $perPage,
-                ]);
+            $url = rtrim($this->settings->api_url, '/') . '/products/' . $sp->dropi_id;
+            $response = Http::withToken($this->settings->auth_token)->timeout(10)->get($url);
 
             if ($response->successful()) {
                 $data = $response->json();
-                $items = $data['data'] ?? ($data['products'] ?? (is_array($data) ? $data : []));
-                $synced = 0;
+                $item = $data['data'] ?? ($data['product'] ?? $data);
 
-                foreach ($items as $item) {
-                    if (empty($item['name']) && empty($item['title'])) {
-                        continue;
+                if (!empty($item)) {
+                    $wholesale = (float) ($item['price'] ?? ($item['wholesale_price'] ?? $sp->wholesale_price));
+                    $stock = (int) ($item['stock'] ?? ($item['quantity'] ?? $sp->stock));
+
+                    $sp->update([
+                        'wholesale_price' => $wholesale,
+                        'stock' => $stock,
+                    ]);
+
+                    if ($sp->imported_product_id) {
+                        $p = Product::find($sp->imported_product_id);
+                        if ($p) {
+                            $p->update([
+                                'stock' => $stock,
+                                'wholesale_price' => $wholesale,
+                                'profit_margin' => max(0, $p->price - $wholesale),
+                            ]);
+                        }
                     }
 
-                    $name = $item['name'] ?? $item['title'];
-                    $wholesale = (float) ($item['price'] ?? ($item['wholesale_price'] ?? ($item['cost'] ?? 0)));
-                    $suggested = (float) ($item['suggested_price'] ?? ($item['sale_price'] ?? ($wholesale * 1.4)));
-                    $image = $item['image'] ?? ($item['images'][0]['src'] ?? ($item['photo'] ?? null));
-
-                    SupplierProduct::updateOrCreate(
-                        ['dropi_id' => (string) ($item['id'] ?? Str::slug($name))],
-                        [
-                            'name' => $name,
-                            'slug' => Str::slug($name) . '-' . Str::random(4),
-                            'sku' => (string) ($item['sku'] ?? ('DRP-' . ($item['id'] ?? strtoupper(Str::random(6))))),
-                            'short_description' => $item['short_description'] ?? null,
-                            'description' => $item['description'] ?? null,
-                            'wholesale_price' => $wholesale,
-                            'suggested_price' => $suggested,
-                            'stock' => (int) ($item['stock'] ?? ($item['quantity'] ?? 50)),
-                            'image' => $image,
-                            'images' => !empty($item['images']) && is_array($item['images']) ? $item['images'] : ($image ? [$image] : []),
-                            'category_name' => $item['category_name'] ?? ($item['category']['name'] ?? 'General'),
-                        ]
-                    );
-                    $synced++;
+                    return ['success' => true, 'message' => "Producto '{$sp->name}' sincronizado con Dropi (Stock: {$stock}, Costo: " . format_cop($wholesale) . ")."];
                 }
-
-                $this->settings->update(['last_sync_at' => now()]);
-
-                return [
-                    'success' => true,
-                    'message' => "Se sincronizaron {$synced} productos reales desde la API de Dropi.",
-                    'synced' => $synced,
-                ];
             }
-
-            return [
-                'success' => false,
-                'message' => 'Dropi API respondió con código: ' . $response->status(),
-                'synced' => 0,
-            ];
         } catch (\Exception $e) {
-            Log::error('Error conectando con Dropi API: ' . $e->getMessage());
-            return [
-                'success' => false,
-                'message' => 'Error al conectar con la API de Dropi: ' . $e->getMessage(),
-                'synced' => 0,
-            ];
+            Log::warning("Error sincronizando producto individual Dropi: " . $e->getMessage());
         }
+
+        return ['success' => false, 'message' => 'No se pudo obtener actualización en vivo de Dropi.'];
     }
 
     /**
