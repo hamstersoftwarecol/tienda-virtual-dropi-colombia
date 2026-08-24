@@ -84,4 +84,15 @@ class SupplierController extends Controller
 
         return back()->with('success', 'Proveedor registrado exitosamente en la plataforma.');
     }
+
+    public function syncDropi(\App\Services\DropiService $dropiService)
+    {
+        $result = $dropiService->fetchSuppliersFromApi();
+
+        if ($result['success']) {
+            return back()->with('success', $result['message']);
+        }
+
+        return back()->with('warning', $result['message']);
+    }
 }

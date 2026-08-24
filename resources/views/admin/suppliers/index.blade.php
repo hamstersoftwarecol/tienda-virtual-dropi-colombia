@@ -9,12 +9,18 @@
         <h4 class="fw-bold mb-1 text-dark">Bodegas y Proveedores Verificados</h4>
         <p class="text-muted small mb-0">Explora bodegas mayoristas en Colombia y sus catálogos disponibles para importación y dropshipping.</p>
     </div>
-    <div class="d-flex gap-2">
-        <a href="{{ route('admin.dropi.catalog') }}" class="btn btn-outline-primary rounded-pill px-3">
+    <div class="d-flex flex-wrap gap-2">
+        <form action="{{ route('admin.suppliers.sync_dropi') }}" method="POST" class="d-inline">
+            @csrf
+            <button type="submit" class="btn btn-outline-primary rounded-pill px-3 shadow-sm d-flex align-items-center gap-2" title="Sincronizar proveedores desde https://app.dropi.co/dashboard/providers">
+                <i class="bi bi-arrow-repeat"></i> Sincronizar Proveedores Dropi API
+            </button>
+        </form>
+        <a href="{{ route('admin.dropi.catalog') }}" class="btn btn-primary rounded-pill px-3">
             <i class="bi bi-cloud-arrow-down me-1"></i> Ir al Importador Dropi
         </a>
-        <button type="button" class="btn btn-primary rounded-pill px-3 shadow-sm" data-bs-toggle="modal" data-bs-target="#newSupplierModal">
-            <i class="bi bi-plus-lg me-1"></i> Registrar Proveedor
+        <button type="button" class="btn btn-success rounded-pill px-3 shadow-sm" data-bs-toggle="modal" data-bs-target="#newSupplierModal">
+            <i class="bi bi-plus-lg me-1"></i> + Registrar Bodega
         </button>
     </div>
 </div>

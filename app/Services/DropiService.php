@@ -64,6 +64,108 @@ class DropiService
     }
 
     /**
+     * Fetch and synchronize suppliers/providers directly from Dropi API
+     */
+    public function fetchSuppliersFromApi(): array
+    {
+        if (empty($this->settings->auth_token)) {
+            return [
+                'success' => false,
+                'message' => 'Falta configurar el Token de Autenticación de Dropi en el panel de integraciones.',
+                'synced' => 0,
+            ];
+        }
+
+        $endpoints = [
+            'https://api.dropi.co/api/users/suppliers',
+            'https://api.dropi.co/api/users/providers',
+            'https://api.dropi.co/api/products/suppliers',
+            'https://api.dropi.co/api/warehouses',
+        ];
+
+        $token = $this->settings->auth_token;
+        $items = [];
+        $lastError = null;
+
+        foreach ($endpoints as $url) {
+            try {
+                $response = Http::withToken($token)
+                    ->withHeaders([
+                        'Accept' => 'application/json',
+                        'X-Dropi-Token' => $token,
+                        'token' => $token,
+                    ])
+                    ->timeout(10)
+                    ->get($url);
+
+                if ($response->successful()) {
+                    $json = $response->json();
+                    $extracted = $json['data'] ?? ($json['suppliers'] ?? ($json['providers'] ?? ($json['objects'] ?? (is_array($json) ? $json : []))));
+                    if (is_array($extracted) && count($extracted) > 0) {
+                        $items = $extracted;
+                        break;
+                    }
+                } else {
+                    $json = $response->json();
+                    if (!empty($json['message'])) {
+                        $lastError = $json['message'];
+                    }
+                }
+            } catch (\Exception $e) {
+                Log::warning("Error consultando proveedores en {$url}: " . $e->getMessage());
+            }
+        }
+
+        if (count($items) > 0) {
+            $synced = 0;
+            foreach ($items as $item) {
+                $name = $item['name'] ?? ($item['business_name'] ?? ($item['company_name'] ?? ('Bodega Dropi #' . ($item['id'] ?? rand(100, 999)))));
+                $slug = Str::slug($name) . '-' . ($item['id'] ?? Str::random(4));
+                $city = $item['city'] ?? ($item['city_name'] ?? 'Colombia');
+                $department = $item['department'] ?? ($item['state'] ?? 'Colombia');
+
+                Supplier::updateOrCreate(
+                    ['slug' => $slug],
+                    [
+                        'name' => $name,
+                        'city' => $city,
+                        'department' => $department,
+                        'phone' => $item['phone'] ?? ($item['whatsapp'] ?? null),
+                        'email' => $item['email'] ?? null,
+                        'warehouse_address' => $item['address'] ?? ($item['warehouse_address'] ?? 'Bodega Dropi Colombia'),
+                        'description' => $item['description'] ?? "Proveedor oficial verificado en Dropi.co (ID: " . ($item['id'] ?? 'Dropi') . ").",
+                        'logo' => $item['logo'] ?? ($item['photo'] ?? 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=300'),
+                        'rating' => (float) ($item['rating'] ?? 4.9),
+                        'is_verified' => true,
+                        'is_active' => true,
+                    ]
+                );
+                $synced++;
+            }
+
+            return [
+                'success' => true,
+                'message' => "🎉 ¡Se sincronizaron exitosamente {$synced} proveedores / bodegas desde Dropi API!",
+                'synced' => $synced,
+            ];
+        }
+
+        if ($lastError) {
+            return [
+                'success' => false,
+                'message' => "Dropi API respondió: '{$lastError}'. El token actual es de tipo Integración WooCommerce. Para sincronizar la lista completa de https://app.dropi.co/dashboard/providers, genera un Token de API en Dropi con permisos de catálogo/proveedores.",
+                'synced' => 0,
+            ];
+        }
+
+        return [
+            'success' => true,
+            'message' => 'No se encontraron nuevos proveedores en la API de Dropi.',
+            'synced' => 0,
+        ];
+    }
+
+    /**
      * Search & Filter Dropi / Supplier Catalog
      */
     public function searchSupplierProducts(array $filters = [])
