@@ -185,6 +185,14 @@
                     </div>
                 @endif
 
+                @if(session('warning'))
+                    <div class="alert alert-warning alert-dismissible fade show rounded-3 shadow-sm border-0 d-flex align-items-center gap-2" role="alert">
+                        <i class="bi bi-exclamation-circle-fill fs-5 text-warning"></i>
+                        <div>{{ session('warning') }}</div>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                @endif
+
                 @if(session('error'))
                     <div class="alert alert-danger alert-dismissible fade show rounded-3 shadow-sm border-0 d-flex align-items-center gap-2" role="alert">
                         <i class="bi bi-exclamation-triangle-fill fs-5 text-danger"></i>
