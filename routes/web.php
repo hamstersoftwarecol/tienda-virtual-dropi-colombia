@@ -113,6 +113,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::post('/integrations/woocommerce/keys', [AdminIntegrationController::class, 'generateWooCommerceKey'])->name('integrations.wc.keys.generate');
     Route::delete('/integrations/woocommerce/keys/{key}', [AdminIntegrationController::class, 'revokeWooCommerceKey'])->name('integrations.wc.keys.revoke');
     Route::post('/integrations/dropi/settings', [AdminIntegrationController::class, 'updateDropiSettings'])->name('integrations.dropi.settings');
+    Route::post('/integrations/dropi/test-connection', [AdminIntegrationController::class, 'testDropiConnection'])->name('integrations.dropi.test');
 
     // Coupons Management
     Route::get('/coupons', [AdminCouponController::class, 'index'])->name('coupons.index');

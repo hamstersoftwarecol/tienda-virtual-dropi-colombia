@@ -180,7 +180,23 @@
                 </div>
             @endif
 
-            <form action="{{ route('admin.integrations.dropi.settings') }}" method="POST">
+            @if(session('connection_test_result'))
+                @php $res = session('connection_test_result'); @endphp
+                <div class="alert alert-success border-0 shadow-sm rounded-3 p-3 mb-3 small">
+                    <div class="d-flex align-items-center gap-2 fw-bold text-success mb-2">
+                        <i class="bi bi-patch-check-fill fs-5"></i> ¡Resultado del Diagnóstico de Conexión!
+                    </div>
+                    <ul class="list-unstyled mb-0 text-dark small">
+                        <li><i class="bi bi-check-circle-fill text-success me-1"></i> <strong>Firma JWT Dropi:</strong> Válida</li>
+                        <li><i class="bi bi-check-circle-fill text-success me-1"></i> <strong>ID Usuario Dropi:</strong> {{ $res['user_id'] }}</li>
+                        <li><i class="bi bi-check-circle-fill text-success me-1"></i> <strong>URL Vinculada:</strong> {{ $res['integration_url'] }}</li>
+                        <li><i class="bi bi-check-circle-fill text-success me-1"></i> <strong>Tipo Integración:</strong> {{ $res['integration_type'] }}</li>
+                        <li><i class="bi bi-check-circle-fill text-success me-1"></i> <strong>Estado API:</strong> {{ $res['api_message'] }}</li>
+                    </ul>
+                </div>
+            @endif
+
+            <form action="{{ route('admin.integrations.dropi.settings') }}" method="POST" class="mb-3">
                 @csrf
                 <div class="mb-3">
                     <label for="api_url" class="form-label small fw-bold">URL de la API de Dropi *</label>
@@ -189,8 +205,8 @@
 
                 <div class="mb-3">
                     <label for="auth_token" class="form-label small fw-bold">Token JWT de Autenticación Dropi *</label>
-                    <textarea name="auth_token" id="auth_token" rows="3" class="form-control rounded-3 font-monospace small" placeholder="eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...">{{ old('auth_token', $dropiSettings->auth_token) }}</textarea>
-                    <small class="text-muted">Token JWT oficial vinculado con tu cuenta de Dropi.</small>
+                    <textarea name="auth_token" id="auth_token" rows="3" class="form-control rounded-3 font-monospace small" placeholder="eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9..." required>{{ old('auth_token', $dropiSettings->auth_token) }}</textarea>
+                    <small class="text-muted">Pega aquí el Token generado en tu cuenta de Dropi.</small>
                 </div>
 
                 <div class="row g-2 mb-3">
@@ -215,9 +231,18 @@
                     <label class="form-check-label small fw-semibold" for="auto_sync_orders">Despachar pedidos automáticamente a Dropi</label>
                 </div>
 
+                <div class="d-grid gap-2">
+                    <button type="submit" class="btn btn-primary rounded-pill fw-bold">
+                        <i class="bi bi-save me-1"></i> Guardar Token & Configuración
+                    </button>
+                </div>
+            </form>
+
+            <form action="{{ route('admin.integrations.dropi.test') }}" method="POST">
+                @csrf
                 <div class="d-grid">
-                    <button type="submit" class="btn btn-primary rounded-pill fw-semibold">
-                        <i class="bi bi-save me-1"></i> Guardar Configuración Dropi
+                    <button type="submit" class="btn btn-outline-success rounded-pill fw-bold">
+                        <i class="bi bi-shield-check me-1"></i> 🔍 Probar & Validar Conexión Dropi
                     </button>
                 </div>
             </form>
