@@ -77,6 +77,7 @@ class DropiService
         }
 
         $endpoints = [
+            'https://api.dropi.co/api/users/getDataProductsSuplierFilter',
             'https://api.dropi.co/api/users/suppliers',
             'https://api.dropi.co/api/users/providers',
             'https://api.dropi.co/api/products/suppliers',
@@ -89,6 +90,7 @@ class DropiService
 
         foreach ($endpoints as $url) {
             try {
+                // Try GET
                 $response = Http::withToken($token)
                     ->withHeaders([
                         'Accept' => 'application/json',
@@ -98,9 +100,21 @@ class DropiService
                     ->timeout(10)
                     ->get($url);
 
+                if (!$response->successful()) {
+                    // Try POST with country CO
+                    $response = Http::withToken($token)
+                        ->withHeaders([
+                            'Accept' => 'application/json',
+                            'X-Dropi-Token' => $token,
+                            'token' => $token,
+                        ])
+                        ->timeout(10)
+                        ->post($url, ['country' => 'CO']);
+                }
+
                 if ($response->successful()) {
                     $json = $response->json();
-                    $extracted = $json['data'] ?? ($json['suppliers'] ?? ($json['providers'] ?? ($json['objects'] ?? (is_array($json) ? $json : []))));
+                    $extracted = $json['data']['suppliers'] ?? ($json['suppliers'] ?? ($json['data'] ?? ($json['providers'] ?? ($json['objects'] ?? (is_array($json) ? $json : [])))));
                     if (is_array($extracted) && count($extracted) > 0) {
                         $items = $extracted;
                         break;
