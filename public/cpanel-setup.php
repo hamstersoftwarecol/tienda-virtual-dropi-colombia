@@ -22,23 +22,33 @@ if (!isset($_GET['token']) || $_GET['token'] !== $securityToken) {
     die('<h1>403 Acceso Denegado</h1><p>El token de seguridad proporcionado es inválido.</p>');
 }
 
-// Cargar el entorno de Laravel (soporta estructura local y estructura cPanel con carpeta separada)
-$bootstrapPaths = [
-    __DIR__ . '/../bootstrap/app.php',
-    __DIR__ . '/../tiendavirtual/bootstrap/app.php',
+// Cargar el entorno de Laravel dinámicamente
+$possibleRoots = [
+    __DIR__,
+    __DIR__ . '/..',
+    __DIR__ . '/../tiendavirtual',
+    __DIR__ . '/../novastore-colombia',
+    __DIR__ . '/../tienda',
+    __DIR__ . '/../tienda.hamstersoftware.com',
 ];
 
+if ($parentDirs = glob(__DIR__ . '/../*', GLOB_ONLYDIR)) {
+    $possibleRoots = array_merge($possibleRoots, $parentDirs);
+}
+
 $app = null;
-foreach ($bootstrapPaths as $path) {
-    if (file_exists($path)) {
-        require_once dirname($path) . '/../vendor/autoload.php';
-        $app = require_once $path;
+$baseDir = null;
+foreach ($possibleRoots as $dir) {
+    if (file_exists($dir . '/bootstrap/app.php') && file_exists($dir . '/vendor/autoload.php')) {
+        $baseDir = realpath($dir);
+        require_once $baseDir . '/vendor/autoload.php';
+        $app = require_once $baseDir . '/bootstrap/app.php';
         break;
     }
 }
 
 if (!$app) {
-    die('<h1>Error</h1><p>No se pudo localizar el archivo bootstrap/app.php de Laravel.</p>');
+    die('<h1>Error</h1><p>No se pudo localizar el archivo bootstrap/app.php o vendor/autoload.php de Laravel. Verifica que la carpeta vendor esté subida.</p>');
 }
 
 $kernel = $app->make(\Illuminate\Contracts\Console\Kernel::class);
