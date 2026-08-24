@@ -71,4 +71,18 @@ class DropiCatalogController extends Controller
 
         return back()->with('success', "¡Se importaron exitosamente {$count} productos a tu catálogo con un {$markup}% de margen!");
     }
+
+    public function importAll(Request $request)
+    {
+        $request->validate([
+            'markup_percent' => 'nullable|integer|min:1|max:500',
+            'category_id' => 'nullable|exists:categories,id',
+        ]);
+
+        $markup = $request->input('markup_percent', 40);
+        $catId = $request->input('category_id');
+        $count = $this->dropiService->importAll($markup, $catId);
+
+        return back()->with('success', "🚀 ¡Éxito! Se han importado todos los {$count} productos de Dropi a tu tienda virtual con un {$markup}% de margen de ganancia.");
+    }
 }
