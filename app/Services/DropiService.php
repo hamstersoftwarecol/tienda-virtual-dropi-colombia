@@ -119,19 +119,22 @@ class DropiService
     }
 
     /**
-     * Import a supplier / Dropi product into the local store
+     * Import a supplier / Dropi product into the local store with custom overrides
      */
     public function importProduct(
         int|SupplierProduct $supplierProduct,
         ?float $customSalePrice = null,
         ?int $markupPercent = null,
-        ?int $categoryId = null
+        ?int $categoryId = null,
+        array $customDetails = []
     ): Product {
         if (is_numeric($supplierProduct)) {
             $supplierProduct = SupplierProduct::findOrFail($supplierProduct);
         }
 
-        $wholesale = (float) $supplierProduct->wholesale_price;
+        $wholesale = isset($customDetails['wholesale_price']) && $customDetails['wholesale_price'] > 0
+            ? (float) $customDetails['wholesale_price']
+            : (float) $supplierProduct->wholesale_price;
 
         if ($customSalePrice !== null && $customSalePrice > 0) {
             $salePrice = (float) $customSalePrice;
@@ -145,7 +148,7 @@ class DropiService
 
         // Find or create matching category if none selected
         if (!$categoryId) {
-            $categoryName = $supplierProduct->category_name ?: 'General';
+            $categoryName = !empty($customDetails['category_name']) ? $customDetails['category_name'] : ($supplierProduct->category_name ?: 'General');
             $category = Category::firstOrCreate(
                 ['slug' => Str::slug($categoryName)],
                 [
@@ -164,25 +167,30 @@ class DropiService
             $product = Product::find($supplierProduct->imported_product_id);
         }
 
+        $name = !empty($customDetails['name']) ? trim($customDetails['name']) : $supplierProduct->name;
+
         if (!$product) {
             $product = new Product();
-            $product->slug = Str::slug($supplierProduct->name) . '-' . Str::random(5);
+            $product->slug = Str::slug($name) . '-' . Str::random(5);
         }
+
+        $image = !empty($customDetails['image']) ? $customDetails['image'] : ($supplierProduct->image ?: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=800');
+        $stock = isset($customDetails['stock']) && $customDetails['stock'] >= 0 ? (int) $customDetails['stock'] : ($supplierProduct->stock > 0 ? $supplierProduct->stock : 25);
 
         $product->category_id = $categoryId;
         $product->supplier_id = $supplierProduct->supplier_id;
         $product->dropi_id = $supplierProduct->dropi_id ?: 'DROPI-' . strtoupper(Str::random(8));
-        $product->name = $supplierProduct->name;
-        $product->sku = $supplierProduct->sku ?: 'DRP-' . strtoupper(Str::random(7));
-        $product->short_description = $supplierProduct->short_description;
-        $product->description = $supplierProduct->description;
+        $product->name = $name;
+        $product->sku = !empty($customDetails['sku']) ? $customDetails['sku'] : ($supplierProduct->sku ?: 'DRP-' . strtoupper(Str::random(7)));
+        $product->short_description = !empty($customDetails['short_description']) ? $customDetails['short_description'] : $supplierProduct->short_description;
+        $product->description = !empty($customDetails['description']) ? $customDetails['description'] : $supplierProduct->description;
         $product->wholesale_price = $wholesale;
         $product->price = $salePrice;
         $product->compare_price = round($salePrice * 1.25, -2); // 25% higher comparison price
         $product->profit_margin = $profitMargin;
-        $product->stock = $supplierProduct->stock > 0 ? $supplierProduct->stock : 20;
-        $product->image = $supplierProduct->image;
-        $product->images = $supplierProduct->images ?: [$supplierProduct->image];
+        $product->stock = $stock;
+        $product->image = $image;
+        $product->images = [$image];
         $product->badge = 'DROPSHIPPING';
         $product->is_dropshipping = true;
         $product->is_active = true;
@@ -194,6 +202,56 @@ class DropiService
             'imported_product_id' => $product->id,
             'imported_at' => now(),
         ]);
+
+        return $product;
+    }
+
+    /**
+     * Import a custom product directly from Dropi API payload
+     */
+    public function importDirectProduct(array $data): Product
+    {
+        $wholesale = (float) ($data['wholesale_price'] ?? 0);
+        $salePrice = (float) ($data['sale_price'] ?? ($wholesale * 1.4));
+        $profitMargin = max(0, $salePrice - $wholesale);
+
+        $categoryId = $data['category_id'] ?? null;
+        if (!$categoryId) {
+            $catName = $data['category_name'] ?? 'General';
+            $category = Category::firstOrCreate(
+                ['slug' => Str::slug($catName)],
+                [
+                    'name' => $catName,
+                    'icon' => 'bi-box-seam',
+                    'is_active' => true,
+                    'is_featured' => true,
+                ]
+            );
+            $categoryId = $category->id;
+        }
+
+        $image = !empty($data['image']) ? $data['image'] : 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=800';
+
+        $product = new Product();
+        $product->category_id = $categoryId;
+        $product->supplier_id = $data['supplier_id'] ?? null;
+        $product->dropi_id = $data['dropi_id'] ?? ('DROPI-' . strtoupper(Str::random(8)));
+        $product->name = $data['name'];
+        $product->slug = Str::slug($data['name']) . '-' . Str::random(5);
+        $product->sku = $data['sku'] ?? ('DRP-' . strtoupper(Str::random(7)));
+        $product->short_description = $data['short_description'] ?? null;
+        $product->description = $data['description'] ?? null;
+        $product->wholesale_price = $wholesale;
+        $product->price = $salePrice;
+        $product->compare_price = round($salePrice * 1.25, -2);
+        $product->profit_margin = $profitMargin;
+        $product->stock = (int) ($data['stock'] ?? 20);
+        $product->image = $image;
+        $product->images = [$image];
+        $product->badge = 'DROPSHIPPING';
+        $product->is_dropshipping = true;
+        $product->is_active = true;
+        $product->save();
 
         return $product;
     }
