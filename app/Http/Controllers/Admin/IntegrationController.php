@@ -9,11 +9,12 @@ use Illuminate\Http\Request;
 
 class IntegrationController extends Controller
 {
-    public function index()
+    public function index(\App\Services\DropiService $dropiService)
     {
         $apiKeys = WooCommerceApiKey::latest()->get();
         $dropiSettings = DropiSetting::getSettings();
-        return view('admin.integrations.index', compact('apiKeys', 'dropiSettings'));
+        $tokenData = $dropiService->getParsedTokenData();
+        return view('admin.integrations.index', compact('apiKeys', 'dropiSettings', 'tokenData'));
     }
 
     public function generateWooCommerceKey(Request $request)

@@ -22,6 +22,40 @@ class DropiService
     }
 
     /**
+     * Decode and parse Dropi JWT Token payload
+     */
+    public function getParsedTokenData(?string $token = null): ?array
+    {
+        $jwt = $token ?: $this->settings->auth_token;
+        if (!$jwt) {
+            return null;
+        }
+
+        try {
+            $parts = explode('.', $jwt);
+            if (count($parts) === 3) {
+                $payload = json_decode(base64_decode(strtr($parts[1], '-_', '+/')), true);
+                if ($payload) {
+                    return [
+                        'user_id' => $payload['sub'] ?? null,
+                        'audience' => $payload['aud'] ?? null,
+                        'token_type' => $payload['token_type'] ?? null,
+                        'integration_url' => $payload['integration_url'] ?? null,
+                        'integration_type' => $payload['integration_type'] ?? null,
+                        'issued_at' => isset($payload['iat']) ? date('Y-m-d H:i:s', $payload['iat']) : null,
+                        'expires_at' => isset($payload['exp']) ? date('Y-m-d H:i:s', $payload['exp']) : null,
+                        'is_valid' => true,
+                    ];
+                }
+            }
+        } catch (\Exception $e) {
+            Log::warning('Error parsing Dropi JWT: ' . $e->getMessage());
+        }
+
+        return null;
+    }
+
+    /**
      * Get list of verified suppliers & warehouses
      */
     public function getSuppliers()

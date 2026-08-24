@@ -145,9 +145,40 @@
     <div class="col-lg-5">
         <!-- Dropi Settings Form -->
         <div class="card border-0 shadow-sm rounded-4 bg-white p-4 mb-4">
-            <h5 class="fw-bold mb-3 text-dark border-bottom pb-2">
-                <i class="bi bi-gear-wide-connected text-primary me-2"></i>Configuración Dropi API
-            </h5>
+            <div class="d-flex justify-content-between align-items-center mb-3 border-bottom pb-2">
+                <h5 class="fw-bold mb-0 text-dark">
+                    <i class="bi bi-gear-wide-connected text-primary me-2"></i>Configuración Dropi API
+                </h5>
+                @if($tokenData && $tokenData['is_valid'])
+                    <span class="badge bg-success-subtle text-success border border-success border-opacity-25 rounded-pill px-3 py-1">
+                        <i class="bi bi-patch-check-fill"></i> Token Activo & Válido
+                    </span>
+                @else
+                    <span class="badge bg-secondary-subtle text-muted rounded-pill px-3 py-1">Sin Token</span>
+                @endif
+            </div>
+
+            @if($tokenData && $tokenData['is_valid'])
+                <div class="alert alert-success border-0 bg-success-subtle p-3 rounded-3 mb-3 small">
+                    <div class="d-flex align-items-center gap-2 mb-2 fw-bold text-success">
+                        <i class="bi bi-shield-check fs-5"></i> ¡Autenticación con Dropi.co Verificada!
+                    </div>
+                    <div class="row g-2 text-dark">
+                        <div class="col-6">
+                            <span class="text-muted d-block">ID Usuario Dropi:</span>
+                            <strong class="font-monospace">{{ $tokenData['user_id'] }}</strong>
+                        </div>
+                        <div class="col-6">
+                            <span class="text-muted d-block">Tipo Integración:</span>
+                            <strong class="text-uppercase">{{ $tokenData['integration_type'] }}</strong>
+                        </div>
+                        <div class="col-12">
+                            <span class="text-muted d-block">URL Vinculada:</span>
+                            <code class="text-primary">{{ $tokenData['integration_url'] }}</code>
+                        </div>
+                    </div>
+                </div>
+            @endif
 
             <form action="{{ route('admin.integrations.dropi.settings') }}" method="POST">
                 @csrf
@@ -157,9 +188,9 @@
                 </div>
 
                 <div class="mb-3">
-                    <label for="auth_token" class="form-label small fw-bold">Token de Autenticación Dropi (Opcional)</label>
-                    <input type="password" name="auth_token" id="auth_token" class="form-control rounded-3 font-monospace" placeholder="Bearer eyJhbGciOi..." value="{{ old('auth_token', $dropiSettings->auth_token) }}">
-                    <small class="text-muted">Si no tienes token real, la tienda simulará las respuestas y guías automáticamente.</small>
+                    <label for="auth_token" class="form-label small fw-bold">Token JWT de Autenticación Dropi *</label>
+                    <textarea name="auth_token" id="auth_token" rows="3" class="form-control rounded-3 font-monospace small" placeholder="eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...">{{ old('auth_token', $dropiSettings->auth_token) }}</textarea>
+                    <small class="text-muted">Token JWT oficial vinculado con tu cuenta de Dropi.</small>
                 </div>
 
                 <div class="row g-2 mb-3">
