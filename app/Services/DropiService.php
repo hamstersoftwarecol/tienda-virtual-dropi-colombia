@@ -448,6 +448,9 @@ class DropiService
                     $json = $response->json();
                     if (!empty($json['message'])) {
                         $lastErrorMsg = $json['message'];
+                        if ($response->status() === 401) {
+                            break;
+                        }
                     }
                 }
             } catch (\Exception $e) {
