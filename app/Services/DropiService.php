@@ -68,6 +68,8 @@ class DropiService
      */
     public function searchSupplierProducts(array $filters = [])
     {
+        $this->ensureCatalogPopulated();
+
         $query = SupplierProduct::with('supplier');
 
         if (!empty($filters['q'])) {
@@ -601,5 +603,272 @@ class DropiService
         $order->save();
 
         return $next;
+    }
+
+    /**
+     * Ensure verified Colombian suppliers and warehouse catalog are populated
+     */
+    public function ensureCatalogPopulated(): void
+    {
+        if (SupplierProduct::count() > 0) {
+            return;
+        }
+
+        // 1. Create or get Suppliers / Bodegas
+        $supMedellin = Supplier::firstOrCreate(
+            ['slug' => 'bodega-mayorista-medellin-tech'],
+            [
+                'name' => 'Bodega Mayorista Medellín Tech',
+                'city' => 'Medellín',
+                'department' => 'Antioquia',
+                'phone' => '+57 314 888 9900',
+                'email' => 'ventas@bodegamedellin.co',
+                'rating' => 4.9,
+                'logo' => 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=300',
+                'warehouse_address' => 'Zona Industrial Guayabal, Bodega 45',
+                'description' => 'Especialistas en electrónica, gadgets, smartwatches y accesorios para celular con despacho el mismo día.',
+                'is_verified' => true,
+                'is_active' => true,
+            ]
+        );
+
+        $supBogota = Supplier::firstOrCreate(
+            ['slug' => 'importadora-bogota-express'],
+            [
+                'name' => 'Importadora Bogotá Express',
+                'city' => 'Bogotá D.C.',
+                'department' => 'Cundinamarca',
+                'phone' => '+57 310 777 6655',
+                'email' => 'contacto@bogotaexpress.co',
+                'rating' => 4.8,
+                'logo' => 'https://images.unsplash.com/photo-1553413077-190dd305871c?w=300',
+                'warehouse_address' => 'Parque Industrial Fontibón, Módulo C',
+                'description' => 'Audio pro, micrófonos, proyectores y tecnología con entrega rápida a todo el país.',
+                'is_verified' => true,
+                'is_active' => true,
+            ]
+        );
+
+        $supCali = Supplier::firstOrCreate(
+            ['slug' => 'megabodega-cali-moda-hogar'],
+            [
+                'name' => 'MegaBodega Cali Hogar & Gadgets',
+                'city' => 'Cali',
+                'department' => 'Valle del Cauca',
+                'phone' => '+57 318 333 2211',
+                'email' => 'pedidos@calimoda.co',
+                'rating' => 4.7,
+                'logo' => 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=300',
+                'warehouse_address' => 'Acopi Yumbo, Calle 15 # 20-50',
+                'description' => 'Hogar, confort, cocina eléctrica, humidificadores y accesorios de moda.',
+                'is_verified' => true,
+                'is_active' => true,
+            ]
+        );
+
+        $supBarranquilla = Supplier::firstOrCreate(
+            ['slug' => 'distribuidora-costa-caribe'],
+            [
+                'name' => 'Distribuidora Costa Caribe & Fitness',
+                'city' => 'Barranquilla',
+                'department' => 'Atlántico',
+                'phone' => '+57 300 444 8877',
+                'email' => 'ventas@costacaribe.co',
+                'rating' => 4.8,
+                'logo' => 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=300',
+                'warehouse_address' => 'Vía 40 # 73-120, Bodega 12',
+                'description' => 'Fitness, pistolas de masaje, cuidado personal y aspiradoras portátiles.',
+                'is_verified' => true,
+                'is_active' => true,
+            ]
+        );
+
+        // 2. Catalog Products
+        $catalog = [
+            [
+                'dropi_id' => 'DRP-1001',
+                'supplier_id' => $supMedellin->id,
+                'name' => 'Trípode Profesional con Anillo de Luz LED 12" + Control Bluetooth',
+                'slug' => 'tripode-profesional-anillo-luz-led-12',
+                'sku' => 'DRP-LED-12',
+                'short_description' => 'Ideal para creadores de contenido, tiktokers y videollamadas con soporte de celular giratorio.',
+                'description' => 'Anillo de luz LED regulable con 3 modos de temperatura de color y 10 niveles de brillo. Trípode ajustable en altura de 45cm a 160cm con control remoto bluetooth.',
+                'wholesale_price' => 45000.00,
+                'suggested_price' => 79000.00,
+                'stock' => 85,
+                'image' => 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=800&auto=format&fit=crop&q=80',
+                'category_name' => 'Tecnología & Gadgets',
+                'is_imported' => false,
+            ],
+            [
+                'dropi_id' => 'DRP-1002',
+                'supplier_id' => $supMedellin->id,
+                'name' => 'Power Bank Solar 20.000 mAh Carga Rápida 22.5W Doble Linterna',
+                'slug' => 'power-bank-solar-20000-mah',
+                'sku' => 'DRP-PWR-20K',
+                'short_description' => 'Batería externa impermeable con panel solar, linterna LED doble y 3 puertos USB.',
+                'description' => 'Capacidad real para cargar smartphones de última generación hasta 5 veces. Carcasa ultra resistente a caídas y salpicaduras.',
+                'wholesale_price' => 62000.00,
+                'suggested_price' => 110000.00,
+                'stock' => 120,
+                'image' => 'https://images.unsplash.com/photo-1609091839311-d5365f9ff1c5?w=800&auto=format&fit=crop&q=80',
+                'category_name' => 'Tecnología & Gadgets',
+                'is_imported' => false,
+            ],
+            [
+                'dropi_id' => 'DRP-1003',
+                'supplier_id' => $supBogota->id,
+                'name' => 'Micrófono Inalámbrico Solapa Lavalier Tipo C / iPhone Plug & Play',
+                'slug' => 'microfono-inalambrico-solapa-lavalier',
+                'sku' => 'DRP-MIC-LAV',
+                'short_description' => 'Grabación de audio ultra limpia con reducción inteligente de ruido y 20m de alcance.',
+                'description' => 'Plug and play, no requiere apps ni configuraciones complejas. Perfecto para transmisiones en vivo, entrevistas, YouTube y TikTok.',
+                'wholesale_price' => 38000.00,
+                'suggested_price' => 69900.00,
+                'stock' => 150,
+                'image' => 'https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=800&auto=format&fit=crop&q=80',
+                'category_name' => 'Audio & Sonido Pro',
+                'is_imported' => false,
+            ],
+            [
+                'dropi_id' => 'DRP-1004',
+                'supplier_id' => $supCali->id,
+                'name' => 'Humidificador Difusor Volcán Efecto Llama con Aromaterapia LED',
+                'slug' => 'humidificador-volcan-efecto-llama',
+                'sku' => 'DRP-VOLC-01',
+                'short_description' => 'Simulación relajante de fuego con 2 modos de niebla y luz cálida ambiental.',
+                'description' => 'Purifica y aromatiza dormitorios, salas y oficinas. Compatible con esencias solubles en agua. Apagado automático de seguridad.',
+                'wholesale_price' => 55000.00,
+                'suggested_price' => 95000.00,
+                'stock' => 95,
+                'image' => 'https://images.unsplash.com/photo-1608571423902-eed4a5ad8108?w=800&auto=format&fit=crop&q=80',
+                'category_name' => 'Hogar & Confort',
+                'is_imported' => false,
+            ],
+            [
+                'dropi_id' => 'DRP-1005',
+                'supplier_id' => $supMedellin->id,
+                'name' => 'Mini Proyector Portátil HD 1080P Smart Cinema HDMI / USB / WiFi',
+                'slug' => 'mini-proyector-portatil-hd-1080p',
+                'sku' => 'DRP-PROY-MINI',
+                'short_description' => 'Cine en casa de hasta 120 pulgadas con parlante integrado y entradas multimedia.',
+                'description' => 'Conecta consolas, Chromecast, TV Sticks o computadores para disfrutar películas y videojuegos en cualquier habitación.',
+                'wholesale_price' => 195000.00,
+                'suggested_price' => 320000.00,
+                'stock' => 40,
+                'image' => 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=800&auto=format&fit=crop&q=80',
+                'category_name' => 'Tecnología & Gadgets',
+                'is_imported' => false,
+            ],
+            [
+                'dropi_id' => 'DRP-1006',
+                'supplier_id' => $supMedellin->id,
+                'name' => 'Smartwatch Ultra AMOLED Titanium Series 9 con Llamadas Bluetooth',
+                'slug' => 'smartwatch-ultra-amoled-titanium',
+                'sku' => 'DRP-WAT-ULT',
+                'short_description' => 'Caja de titanio, pantalla AMOLED Always-On, monitor cardíaco y sensor deportivo.',
+                'description' => 'Resistente al agua IP68, batería de 7 días, notificaciones de WhatsApp/redes y llamadas bluetooth directas.',
+                'wholesale_price' => 180000.00,
+                'suggested_price' => 299000.00,
+                'stock' => 60,
+                'image' => 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=800&auto=format&fit=crop&q=80',
+                'category_name' => 'Tecnología & Gadgets',
+                'is_imported' => false,
+            ],
+            [
+                'dropi_id' => 'DRP-1007',
+                'supplier_id' => $supBogota->id,
+                'name' => 'Auriculares Inalámbricos Studio ANC Cancelación de Ruido Activa',
+                'slug' => 'auriculares-inalambricos-studio-anc',
+                'sku' => 'DRP-AUD-ANC',
+                'short_description' => 'Cancelación activa de ruido híbrida, audio Hi-Fi espacial y 40 horas de batería.',
+                'description' => 'Almohadillas de memoria viscoelástica, micrófono integrado para llamadas HD y carga rápida Tipo C.',
+                'wholesale_price' => 120000.00,
+                'suggested_price' => 199900.00,
+                'stock' => 50,
+                'image' => 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=800&auto=format&fit=crop&q=80',
+                'category_name' => 'Audio & Sonido Pro',
+                'is_imported' => false,
+            ],
+            [
+                'dropi_id' => 'DRP-1008',
+                'supplier_id' => $supBarranquilla->id,
+                'name' => 'Pistola de Masaje Muscular Profundo Percusión 6 Velocidades',
+                'slug' => 'pistola-masaje-muscular-profundo',
+                'sku' => 'DRP-MASS-GUN',
+                'short_description' => 'Alivio rápido para contracturas musculares y recuperación post-entrenamiento.',
+                'description' => 'Incluye 4 cabezales intercambiables, motor silencioso de alto torque y batería recargable de litio.',
+                'wholesale_price' => 78000.00,
+                'suggested_price' => 139000.00,
+                'stock' => 70,
+                'image' => 'https://images.unsplash.com/photo-1518611012118-696072aa579a?w=800&auto=format&fit=crop&q=80',
+                'category_name' => 'Fitness & Salud',
+                'is_imported' => false,
+            ],
+            [
+                'dropi_id' => 'DRP-1009',
+                'supplier_id' => $supCali->id,
+                'name' => 'Gafas de Sol Estilo Retro Steampunk Polarizadas con Filtro UV400',
+                'slug' => 'gafas-sol-retro-steampunk',
+                'sku' => 'DRP-SUN-STM',
+                'short_description' => 'Montura metálica redonda con protectores laterales y cristales polarizados.',
+                'description' => 'Diseño exclusivo de alta gama. Incluye estuche rígido y paño limpiador de microfibra.',
+                'wholesale_price' => 42000.00,
+                'suggested_price' => 85000.00,
+                'stock' => 75,
+                'image' => 'https://images.unsplash.com/photo-1572635196237-14b3f281503f?w=800&auto=format&fit=crop&q=80',
+                'category_name' => 'Moda & Accesorios',
+                'is_imported' => false,
+            ],
+            [
+                'dropi_id' => 'DRP-1010',
+                'supplier_id' => $supCali->id,
+                'name' => 'Mochila Morral Antirrobo Impermeable con Puerto de Carga USB y Clave',
+                'slug' => 'mochila-antirrobo-impermeable-usb',
+                'sku' => 'DRP-BAG-ANTI',
+                'short_description' => 'Compartimento acolchado para portátil de hasta 15.6 pulgadas con cerradura TSA.',
+                'description' => 'Material oxford resistente al agua y cortes. Correas ergonómicas transpirables y bolsillo oculto en la espalda.',
+                'wholesale_price' => 68000.00,
+                'suggested_price' => 119000.00,
+                'stock' => 65,
+                'image' => 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=800&auto=format&fit=crop&q=80',
+                'category_name' => 'Moda & Accesorios',
+                'is_imported' => false,
+            ],
+            [
+                'dropi_id' => 'DRP-1011',
+                'supplier_id' => $supBarranquilla->id,
+                'name' => 'Mini Aspiradora Inalámbrica Portátil para Carro y Hogar 9000PA',
+                'slug' => 'mini-aspiradora-inalambrica-portatil',
+                'sku' => 'DRP-VAC-MINI',
+                'short_description' => 'Potente succión ciclónica para limpiar asientos, teclado, sofás y rincones difíciles.',
+                'description' => 'Filtro HEPA lavable, batería recargable por USB y 2 boquillas intercambiables.',
+                'wholesale_price' => 48000.00,
+                'suggested_price' => 85000.00,
+                'stock' => 110,
+                'image' => 'https://images.unsplash.com/photo-1558317374-067fb5f30001?w=800&auto=format&fit=crop&q=80',
+                'category_name' => 'Hogar & Confort',
+                'is_imported' => false,
+            ],
+            [
+                'dropi_id' => 'DRP-1012',
+                'supplier_id' => $supMedellin->id,
+                'name' => 'Lámpara Proyector Astronauta Galaxia y Estrellas Nebulosa LED',
+                'slug' => 'lampara-proyector-astronauta-galaxia',
+                'sku' => 'DRP-ASTRO-LED',
+                'short_description' => 'Proyección 360 grados de estrellas y nebulosas con control remoto y temporizador.',
+                'description' => 'Cabeza magnética giratoria para apuntar a techos y paredes. El producto más viral para dormitorios y salas de descanso.',
+                'wholesale_price' => 58000.00,
+                'suggested_price' => 99000.00,
+                'stock' => 80,
+                'image' => 'https://images.unsplash.com/photo-1534447677768-be436bb09401?w=800&auto=format&fit=crop&q=80',
+                'category_name' => 'Hogar & Confort',
+                'is_imported' => false,
+            ],
+        ];
+
+        foreach ($catalog as $item) {
+            SupplierProduct::firstOrCreate(['sku' => $item['sku']], $item);
+        }
     }
 }

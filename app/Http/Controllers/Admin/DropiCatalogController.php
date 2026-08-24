@@ -21,6 +21,8 @@ class DropiCatalogController extends Controller
 
     public function index(Request $request)
     {
+        $this->dropiService->ensureCatalogPopulated();
+
         $filters = $request->only(['q', 'supplier_id', 'category', 'is_imported', 'min_price', 'max_price', 'sort']);
         $supplierProducts = $this->dropiService->searchSupplierProducts($filters);
         $suppliers = Supplier::where('is_active', true)->get();
