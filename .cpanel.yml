@@ -3,5 +3,9 @@ deployment:
   tasks:
     - export DEPLOYPATH=/home/hamstersoftware/tienda.hamstersoftware.com/
     - /bin/cp -R * $DEPLOYPATH
-    - /bin/cp .htaccess $DEPLOYPATH 2>/dev/null || true
-    - /bin/cp .env.example $DEPLOYPATH 2>/dev/null || true
+    - /bin/cp -R public/* $DEPLOYPATH 2>/dev/null || true
+    - /bin/cp public/.htaccess $DEPLOYPATH/.htaccess 2>/dev/null || true
+    - /bin/cp .env.example $DEPLOYPATH/.env.example 2>/dev/null || true
+    - [ ! -f $DEPLOYPATH/.env ] && /bin/cp .env.example $DEPLOYPATH/.env || true
+    - /bin/chmod 755 $DEPLOYPATH 2>/dev/null || true
+    - /bin/chmod -R 775 $DEPLOYPATH/storage $DEPLOYPATH/bootstrap/cache 2>/dev/null || true
