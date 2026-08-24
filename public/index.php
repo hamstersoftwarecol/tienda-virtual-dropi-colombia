@@ -1,21 +1,64 @@
 <?php
 
+define('LARAVEL_START', microtime(true));
+
+// Strict PHP Version Pre-Check (Before loading any PHP 8.2+ class syntax)
+if (version_compare(PHP_VERSION, '8.2.0', '<')) {
+    http_response_code(500);
+    ?>
+    <!DOCTYPE html>
+    <html lang="es">
+    <head>
+        <meta charset="UTF-8">
+        <title>Versión de PHP Incompatible - NovaStore</title>
+        <style>
+            body { font-family: system-ui, -apple-system, sans-serif; background: #f8fafc; padding: 40px 20px; color: #1e293b; }
+            .card { max-width: 650px; margin: 0 auto; background: #fff; border: 1px solid #e2e8f0; border-radius: 16px; padding: 30px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1); }
+            h2 { color: #e11d48; margin-top: 0; }
+            .badge { display: inline-block; padding: 4px 10px; background: #fee2e2; color: #991b1b; border-radius: 6px; font-weight: bold; font-family: monospace; }
+            .badge-success { background: #dcfce7; color: #166534; }
+            ol { line-height: 1.8; padding-left: 20px; }
+            .box { background: #f1f5f9; padding: 15px; border-radius: 8px; font-size: 14px; margin-top: 15px; }
+        </style>
+    </head>
+    <body>
+        <div class="card">
+            <h2>⚠️ Versión de PHP Incompatible en cPanel</h2>
+            <p>Tu subdominio está ejecutándose actualmente con <span class="badge">PHP <?= PHP_VERSION ?></span>.</p>
+            <p><strong>Laravel 12</strong> requiere como mínimo <span class="badge badge-success">PHP 8.2</span> o <span class="badge badge-success">PHP 8.3</span>.</p>
+            
+            <h4>Cómo cambiar la versión en cPanel (en 30 segundos):</h4>
+            <ol>
+                <li>Entra a tu <strong>cPanel</strong>.</li>
+                <li>Busca y abre <strong>Administrador MultiPHP (MultiPHP Manager)</strong>.</li>
+                <li>Marca la casilla al lado de <strong>tienda.hamstersoftware.com</strong>.</li>
+                <li>En el menú desplegable superior derecho selecciona <strong>ea-php83</strong> (o <code>ea-php82</code>) y haz clic en <strong>Aplicar</strong>.</li>
+            </ol>
+            <div class="box">
+                <em>Si tu servidor usa CloudLinux en vez de MultiPHP, busca <strong>Select PHP Version (Seleccionar Versión de PHP)</strong> y cámbialo a <strong>8.2</strong> u <strong>8.3</strong>.</em>
+            </div>
+        </div>
+    </body>
+    </html>
+    <?php
+    exit(1);
+}
+
 use Illuminate\Foundation\Application;
 use Illuminate\Http\Request;
-
-define('LARAVEL_START', microtime(true));
 
 // Auto-detect Laravel root directory
 $possibleRoots = [
     __DIR__,
     __DIR__ . '/..',
+    __DIR__ . '/resource',
+    __DIR__ . '/../resource',
     __DIR__ . '/../tiendavirtual',
     __DIR__ . '/../novastore-colombia',
     __DIR__ . '/../tienda',
     __DIR__ . '/../tienda.hamstersoftware.com',
 ];
 
-// Scan parent directory folders dynamically if not in predefined list
 if ($parentDirs = glob(__DIR__ . '/../*', GLOB_ONLYDIR)) {
     $possibleRoots = array_merge($possibleRoots, $parentDirs);
 }
@@ -30,13 +73,10 @@ foreach ($possibleRoots as $dir) {
 
 if (!$baseDir) {
     http_response_code(500);
-    echo '<div style="font-family: system-ui, sans-serif; max-width: 650px; margin: 50px auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 12px; background: #fff; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">';
-    echo '<h2 style="color: #e11d48; margin-top: 0;">⚠️ No se encontró la carpeta base de Laravel</h2>';
-    echo '<p style="color: #475569; font-size: 15px;">No se localizó el archivo <code>bootstrap/app.php</code> o la carpeta <code>vendor/autoload.php</code>.</p>';
-    echo '<p style="color: #475569; font-size: 14px;"><strong>Ruta actual evaluada:</strong> <code>' . htmlspecialchars(__DIR__) . '</code></p>';
-    echo '<div style="background: #f8fafc; padding: 14px; border-radius: 8px; border-left: 4px solid #3b82f6; font-size: 13px; color: #334155;">';
-    echo '<strong>Solución:</strong> Asegúrate de que la carpeta <code>vendor</code> y el código fuente estén subidos en tu cuenta de cPanel.';
-    echo '</div></div>';
+    echo '<div style="font-family: system-ui, sans-serif; max-width: 650px; margin: 50px auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 12px; background: #fff;">';
+    echo '<h2 style="color: #e11d48; margin-top: 0;">⚠️ No se encontró el código de Laravel</h2>';
+    echo '<p>No se localizó <code>bootstrap/app.php</code> o la carpeta <code>vendor</code>.</p>';
+    echo '</div>';
     exit(1);
 }
 
@@ -60,18 +100,10 @@ try {
     $app->handleRequest(Request::capture());
 } catch (\Throwable $e) {
     http_response_code(500);
-    echo '<div style="font-family: system-ui, sans-serif; max-width: 750px; margin: 40px auto; padding: 24px; border: 1px solid #fecdd3; border-radius: 12px; background: #fff; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);">';
+    echo '<div style="font-family: system-ui, sans-serif; max-width: 750px; margin: 40px auto; padding: 24px; border: 1px solid #fecdd3; border-radius: 12px; background: #fff;">';
     echo '<h2 style="color: #e11d48; margin-top: 0;">⚠️ Error 500 al Iniciar Laravel</h2>';
     echo '<p style="color: #334155; font-size: 15px; background: #fff1f2; padding: 12px; border-radius: 8px; font-weight: 600;">' . htmlspecialchars($e->getMessage()) . '</p>';
     echo '<p style="color: #64748b; font-size: 13px;"><strong>Archivo:</strong> <code>' . htmlspecialchars($e->getFile()) . ':' . $e->getLine() . '</code></p>';
-    echo '<hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 20px 0;">';
-    echo '<h4 style="color: #0f172a; margin-bottom: 8px;">Posibles causas habituales en cPanel:</h4>';
-    echo '<ol style="color: #475569; font-size: 14px; line-height: 1.6;">';
-    echo '<li><strong>Versión de PHP:</strong> Laravel 12 requiere <strong>PHP >= 8.2</strong>. Ve a <em>MultiPHP Manager</em> en cPanel y selecciona PHP 8.2 u 8.3.</li>';
-    echo '<li><strong>Base de datos no configurada:</strong> Edita el archivo <code>.env</code> con las credenciales de tu base de datos MySQL de cPanel.</li>';
-    echo '<li><strong>Falta la clave de cifrado:</strong> Ejecuta <code>php artisan key:generate</code> o usa el <a href="cpanel-setup.php?token=SetupNovaStore2026&action=status">Asistente Web cPanel</a>.</li>';
-    echo '<li><strong>Permisos de escritura:</strong> Asegúrate de que las carpetas <code>storage/</code> y <code>bootstrap/cache/</code> tengan permisos <strong>775</strong> o <strong>755</strong>.</li>';
-    echo '</ol>';
     echo '</div>';
     exit(1);
 }
