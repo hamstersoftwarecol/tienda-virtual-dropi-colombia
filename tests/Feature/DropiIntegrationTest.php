@@ -63,12 +63,8 @@ class DropiIntegrationTest extends TestCase
         ]);
     }
 
-    public function test_admin_can_view_suppliers_and_catalog(): void
+    public function test_admin_can_view_catalog(): void
     {
-        $response = $this->actingAs($this->admin)->get('/admin/suppliers');
-        $response->assertStatus(200);
-        $response->assertSee('Bodega Central Medellín');
-
         $catalogResponse = $this->actingAs($this->admin)->get('/admin/dropi/catalog');
         $catalogResponse->assertStatus(200);
         $catalogResponse->assertSee('Trípode LED Selfie Pro');

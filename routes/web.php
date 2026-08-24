@@ -92,12 +92,6 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/customers', [AdminCustomerController::class, 'index'])->name('customers.index');
     Route::post('/customers', [AdminCustomerController::class, 'store'])->name('customers.store');
 
-    // Suppliers & Providers
-    Route::get('/suppliers', [AdminSupplierController::class, 'index'])->name('suppliers.index');
-    Route::post('/suppliers', [AdminSupplierController::class, 'store'])->name('suppliers.store');
-    Route::post('/suppliers/sync-dropi', [AdminSupplierController::class, 'syncDropi'])->name('suppliers.sync_dropi');
-    Route::get('/suppliers/{supplier}', [AdminSupplierController::class, 'show'])->name('suppliers.show');
-
     // Dropi Catalog Importer & Dropi Orders
     Route::get('/dropi/catalog', [AdminDropiCatalogController::class, 'index'])->name('dropi.catalog');
     Route::post('/dropi/catalog/sync-api', [AdminDropiCatalogController::class, 'syncApi'])->name('dropi.catalog.sync_api');

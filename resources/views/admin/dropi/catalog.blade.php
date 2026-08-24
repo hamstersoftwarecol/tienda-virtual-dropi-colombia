@@ -19,9 +19,6 @@
                 <i class="bi bi-arrow-repeat"></i> Sincronizar desde Dropi API
             </button>
         </form>
-        <a href="{{ route('admin.suppliers.index') }}" class="btn btn-outline-secondary rounded-pill px-3">
-            <i class="bi bi-building me-1"></i> Bodegas
-        </a>
     </div>
 </div>
 

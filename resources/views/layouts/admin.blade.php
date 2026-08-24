@@ -39,9 +39,6 @@
                 <a class="nav-link {{ request()->routeIs('admin.categories.*') ? 'active' : '' }}" href="{{ route('admin.categories.index') }}">
                     <i class="bi bi-tags"></i> Categorías
                 </a>
-                <a class="nav-link {{ request()->routeIs('admin.suppliers.*') ? 'active' : '' }}" href="{{ route('admin.suppliers.index') }}">
-                    <i class="bi bi-building"></i> Proveedores & Bodegas
-                </a>
                 <a class="nav-link {{ request()->routeIs('admin.dropi.catalog') ? 'active' : '' }}" href="{{ route('admin.dropi.catalog') }}">
                     <i class="bi bi-cloud-arrow-down text-warning"></i> Importador Dropi
                 </a>
@@ -147,9 +144,6 @@
                         </a>
                         <a class="nav-link {{ request()->routeIs('admin.products.*') ? 'active' : '' }}" href="{{ route('admin.products.index') }}">
                             <i class="bi bi-box-seam"></i> Productos
-                        </a>
-                        <a class="nav-link {{ request()->routeIs('admin.suppliers.*') ? 'active' : '' }}" href="{{ route('admin.suppliers.index') }}">
-                            <i class="bi bi-building"></i> Proveedores
                         </a>
                         <a class="nav-link {{ request()->routeIs('admin.dropi.catalog') ? 'active' : '' }}" href="{{ route('admin.dropi.catalog') }}">
                             <i class="bi bi-cloud-arrow-down text-warning"></i> Importador Dropi
