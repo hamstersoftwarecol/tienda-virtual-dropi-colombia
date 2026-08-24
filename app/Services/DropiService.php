@@ -68,8 +68,6 @@ class DropiService
      */
     public function searchSupplierProducts(array $filters = [])
     {
-        $this->ensureCatalogPopulated();
-
         $query = SupplierProduct::with('supplier');
 
         if (!empty($filters['q'])) {
@@ -302,19 +300,20 @@ class DropiService
             ];
         }
 
-        $base = rtrim($this->settings->api_url, '/');
-        $possibleEndpoints = [
-            $base . '/products/my_products',
-            $base . '/products',
-            $base . '/v2/products',
-            $base . '/catalog',
-            $base . '/products/search',
-        ];
+        $customUrl = $this->settings->api_url;
+        $possibleEndpoints = array_unique(array_filter([
+            $customUrl,
+            'https://api.dropi.co/api/products/supplier/v1?user_id=441247',
+            'https://api.dropi.co/api/products/supplier/v1',
+            'https://api.dropi.co/api/products/my_products',
+            'https://api.dropi.co/api/products',
+            'https://api.dropi.co/api/v2/products',
+            'https://api.dropi.co/api/catalog',
+        ]));
 
         $token = $this->settings->auth_token;
         $items = [];
-        $lastStatus = null;
-        $endpointHit = null;
+        $lastErrorMsg = null;
 
         foreach ($possibleEndpoints as $url) {
             try {
@@ -322,6 +321,7 @@ class DropiService
                     ->withHeaders([
                         'Accept' => 'application/json',
                         'X-Dropi-Token' => $token,
+                        'token' => $token,
                     ])
                     ->timeout(12)
                     ->get($url, [
@@ -330,15 +330,17 @@ class DropiService
                         'limit' => $perPage,
                     ]);
 
-                $lastStatus = $response->status();
-
                 if ($response->successful()) {
                     $json = $response->json();
-                    $extracted = $json['data'] ?? ($json['products'] ?? ($json['objects'] ?? ($json['result'] ?? (is_array($json) ? $json : []))));
+                    $extracted = $json['data'] ?? ($json['products'] ?? ($json['objects'] ?? ($json['result'] ?? ($json['body'] ?? (is_array($json) ? $json : [])))));
                     if (is_array($extracted) && count($extracted) > 0) {
                         $items = $extracted;
-                        $endpointHit = $url;
                         break;
+                    }
+                } else {
+                    $json = $response->json();
+                    if (!empty($json['message'])) {
+                        $lastErrorMsg = $json['message'];
                     }
                 }
             } catch (\Exception $e) {
@@ -423,10 +425,18 @@ class DropiService
             ];
         }
 
+        if ($lastErrorMsg) {
+            return [
+                'success' => false,
+                'message' => 'Respuesta de Dropi API: ' . $lastErrorMsg . ' (Verifica que el Token de Dropi tenga permisos de Proveedor para ' . $this->settings->api_url . ').',
+                'synced' => 0,
+            ];
+        }
+
         // If no products were returned directly by Dropi's API list
         return [
             'success' => true,
-            'message' => "La API de Dropi está conectada. Si aún no tienes productos en tu catálogo de Dropi, puedes importarlos individualmente con el botón '+ Importar Producto Dropi'.",
+            'message' => "La API de Dropi está conectada. Puedes importar tus productos individualmente con el botón '+ Importar Producto Dropi'.",
             'synced' => 0,
         ];
     }

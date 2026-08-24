@@ -27,13 +27,15 @@ class DropiSetting extends Model
 
     public static function getSettings(): self
     {
-        return self::firstOrCreate([], [
-            'api_url' => 'https://api.dropi.co/api/',
+        $settings = self::firstOrCreate([], [
+            'api_url' => 'https://api.dropi.co/api/products/supplier/v1?user_id=441247',
             'auth_token' => null,
             'email' => 'admin@tienda.com',
             'auto_sync_orders' => true,
             'default_markup_percent' => 40,
             'default_carrier' => 'Coordinadora',
         ]);
+
+        return $settings;
     }
 }
