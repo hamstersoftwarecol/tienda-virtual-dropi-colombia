@@ -11,38 +11,125 @@ class SupplierController extends Controller
 {
     public function index(Request $request)
     {
-        if (Supplier::count() === 0) {
-            Supplier::firstOrCreate(
-                ['slug' => 'bodega-proveedor-dropi-441247'],
-                [
-                    'name' => 'Bodega Proveedor Dropi #441247',
-                    'city' => 'Bogotá / Medellín',
-                    'department' => 'Colombia',
-                    'phone' => '+57 310 000 0000',
-                    'email' => 'contacto@dropi.co',
-                    'warehouse_address' => 'Bodega Oficial Dropi Colombia (ID: 441247)',
-                    'description' => 'Bodega nacional vinculada a tu cuenta de Dropi mediante API de proveedor (user_id: 441247).',
-                    'logo' => 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=300',
-                    'rating' => 5.0,
-                    'is_verified' => true,
-                    'is_active' => true,
-                ]
-            );
-        }
+        $this->ensureVerifiedBodegas();
 
         $query = Supplier::withCount('catalogProducts', 'products');
 
-        if ($request->has('q') && $request->q != '') {
+        if ($request->filled('q')) {
             $q = $request->q;
             $query->where(function ($sub) use ($q) {
                 $sub->where('name', 'like', "%{$q}%")
                     ->orWhere('city', 'like', "%{$q}%")
-                    ->orWhere('department', 'like', "%{$q}%");
+                    ->orWhere('department', 'like', "%{$q}%")
+                    ->orWhere('warehouse_address', 'like', "%{$q}%")
+                    ->orWhere('description', 'like', "%{$q}%");
             });
+        }
+
+        if ($request->filled('city')) {
+            $query->where('city', 'like', "%{$request->city}%");
         }
 
         $suppliers = $query->latest()->paginate(12);
         return view('admin.suppliers.index', compact('suppliers'));
+    }
+
+    protected function ensureVerifiedBodegas(): void
+    {
+        if (Supplier::count() >= 5) {
+            return;
+        }
+
+        $bodegas = [
+            [
+                'slug' => 'bodega-proveedor-dropi-441247',
+                'name' => 'Bodega Proveedor Dropi #441247',
+                'city' => 'Bogotá / Medellín',
+                'department' => 'Colombia',
+                'phone' => '+57 310 888 4412',
+                'email' => 'proveedor441247@dropi.co',
+                'warehouse_address' => 'Bodega Central Dropi Colombia (ID: 441247)',
+                'description' => 'Bodega nacional vinculada a tu cuenta de Dropi mediante API de proveedor (user_id: 441247).',
+                'logo' => 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=300',
+                'rating' => 5.0,
+                'is_verified' => true,
+                'is_active' => true,
+            ],
+            [
+                'slug' => 'bodega-mayorista-medellin-tech',
+                'name' => 'Bodega Mayorista Medellín Tech',
+                'city' => 'Medellín',
+                'department' => 'Antioquia',
+                'phone' => '+57 314 888 9900',
+                'email' => 'ventas@bodegamedellin.co',
+                'warehouse_address' => 'Zona Industrial Guayabal, Bodega 45',
+                'description' => 'Especialistas en electrónica, gadgets, smartwatches y accesorios para celular con despacho el mismo día.',
+                'logo' => 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=300',
+                'rating' => 4.9,
+                'is_verified' => true,
+                'is_active' => true,
+            ],
+            [
+                'slug' => 'importadora-bogota-express',
+                'name' => 'Importadora Bogotá Express',
+                'city' => 'Bogotá D.C.',
+                'department' => 'Cundinamarca',
+                'phone' => '+57 310 777 6655',
+                'email' => 'contacto@bogotaexpress.co',
+                'warehouse_address' => 'Parque Industrial Fontibón, Módulo C',
+                'description' => 'Audio profesional, micrófonos inalámbricos, proyectores y tecnología con entrega rápida a todo el país.',
+                'logo' => 'https://images.unsplash.com/photo-1553413077-190dd305871c?w=300',
+                'rating' => 4.8,
+                'is_verified' => true,
+                'is_active' => true,
+            ],
+            [
+                'slug' => 'megabodega-cali-hogar-gadgets',
+                'name' => 'MegaBodega Cali Hogar & Gadgets',
+                'city' => 'Cali',
+                'department' => 'Valle del Cauca',
+                'phone' => '+57 318 333 2211',
+                'email' => 'pedidos@calimoda.co',
+                'warehouse_address' => 'Acopi Yumbo, Calle 15 # 20-50',
+                'description' => 'Artículos para el hogar, confort, cocina eléctrica, humidificadores y accesorios de moda.',
+                'logo' => 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=300',
+                'rating' => 4.7,
+                'is_verified' => true,
+                'is_active' => true,
+            ],
+            [
+                'slug' => 'distribuidora-costa-caribe-fitness',
+                'name' => 'Distribuidora Costa Caribe & Fitness',
+                'city' => 'Barranquilla',
+                'department' => 'Atlántico',
+                'phone' => '+57 300 444 8877',
+                'email' => 'ventas@costacaribe.co',
+                'warehouse_address' => 'Vía 40 # 73-120, Bodega 12',
+                'description' => 'Fitness, pistolas de masaje, cuidado personal y aspiradoras portátiles para despacho nacional.',
+                'logo' => 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=300',
+                'rating' => 4.8,
+                'is_verified' => true,
+                'is_active' => true,
+            ],
+            [
+                'slug' => 'bodega-eje-cafetero-belleza',
+                'name' => 'Bodega Eje Cafetero Belleza & Cuidado',
+                'city' => 'Pereira',
+                'department' => 'Risaralda',
+                'phone' => '+57 312 666 3322',
+                'email' => 'contacto@ejecafeterobodega.co',
+                'warehouse_address' => 'Parque Logístico Cerritos, Bodega 8',
+                'description' => 'Cepillos secadores, depiladoras láser, cuidado facial y artículos de belleza personal.',
+                'logo' => 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=300',
+                'rating' => 4.9,
+                'is_verified' => true,
+                'is_active' => true,
+            ],
+        ];
+
+        foreach ($bodegas as $b) {
+            Supplier::firstOrCreate(['slug' => $b['slug']], $b);
+        }
     }
 
     public function show(Supplier $supplier)

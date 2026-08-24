@@ -1,19 +1,19 @@
 @extends('layouts.admin')
 
-@section('title', 'Proveedores & Bodegas')
-@section('page_header', 'Proveedores & Bodegas Dropi (Colombia)')
+@section('title', 'Directorio de Bodegas y Proveedores Dropi')
+@section('page_header', 'Directorio de Bodegas & Proveedores Dropi (Colombia)')
 
 @section('content')
 <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
     <div>
-        <h4 class="fw-bold mb-1 text-dark">Bodegas y Proveedores Verificados</h4>
-        <p class="text-muted small mb-0">Explora bodegas mayoristas en Colombia y sus catálogos disponibles para importación y dropshipping.</p>
+        <h4 class="fw-bold mb-1 text-dark"><i class="bi bi-building-check text-primary me-2"></i>Bodegas & Proveedores Dropi Colombia</h4>
+        <p class="text-muted small mb-0">Explora, visualiza y busca las bodegas mayoristas en Colombia conectadas para importación y dropshipping.</p>
     </div>
     <div class="d-flex flex-wrap gap-2">
         <form action="{{ route('admin.suppliers.sync_dropi') }}" method="POST" class="d-inline">
             @csrf
             <button type="submit" class="btn btn-outline-primary rounded-pill px-3 shadow-sm d-flex align-items-center gap-2" title="Sincronizar proveedores desde https://app.dropi.co/dashboard/providers">
-                <i class="bi bi-arrow-repeat"></i> Sincronizar Proveedores Dropi API
+                <i class="bi bi-arrow-repeat"></i> Sincronizar API Dropi
             </button>
         </form>
         <a href="{{ route('admin.dropi.catalog') }}" class="btn btn-primary rounded-pill px-3">
@@ -28,15 +28,27 @@
 <!-- Search & Filters -->
 <div class="card border-0 shadow-sm rounded-4 bg-white p-3 mb-4">
     <form action="{{ route('admin.suppliers.index') }}" method="GET" class="row g-2 align-items-center">
-        <div class="col-md-9">
+        <div class="col-md-6">
             <div class="input-group input-group-sm">
                 <span class="input-group-text bg-light border-end-0"><i class="bi bi-search text-muted"></i></span>
-                <input type="text" name="q" value="{{ request('q') }}" class="form-control border-start-0" placeholder="Buscar por nombre de bodega, ciudad o departamento (Ej: Medellín, Bogotá, Cali)...">
+                <input type="text" name="q" value="{{ request('q') }}" class="form-control border-start-0" placeholder="Buscar por nombre de bodega, dirección o departamento...">
             </div>
         </div>
-        <div class="col-md-3 d-flex gap-2">
-            <button type="submit" class="btn btn-sm btn-primary rounded-pill w-100">Buscar Proveedor</button>
-            @if(request('q'))
+
+        <div class="col-md-4">
+            <select name="city" class="form-select form-select-sm rounded-3" onchange="this.form.submit()">
+                <option value="">Todas las Ciudades de Colombia</option>
+                <option value="Medellín" {{ request('city') == 'Medellín' ? 'selected' : '' }}>Medellín (Antioquia)</option>
+                <option value="Bogotá" {{ request('city') == 'Bogotá' ? 'selected' : '' }}>Bogotá D.C. (Cundinamarca)</option>
+                <option value="Cali" {{ request('city') == 'Cali' ? 'selected' : '' }}>Cali (Valle del Cauca)</option>
+                <option value="Barranquilla" {{ request('city') == 'Barranquilla' ? 'selected' : '' }}>Barranquilla (Atlántico)</option>
+                <option value="Pereira" {{ request('city') == 'Pereira' ? 'selected' : '' }}>Pereira (Eje Cafetero)</option>
+            </select>
+        </div>
+
+        <div class="col-md-2 d-flex gap-2">
+            <button type="submit" class="btn btn-sm btn-primary rounded-pill w-100 fw-bold">Buscar</button>
+            @if(request()->hasAny(['q', 'city']))
                 <a href="{{ route('admin.suppliers.index') }}" class="btn btn-sm btn-outline-secondary rounded-pill" title="Limpiar"><i class="bi bi-x-lg"></i></a>
             @endif
         </div>
@@ -51,15 +63,15 @@
                 <div class="d-flex align-items-center gap-3 mb-3">
                     <img src="{{ $supplier->logo }}" alt="{{ $supplier->name }}" class="rounded-4 object-fit-cover shadow-sm border" style="width: 60px; height: 60px;">
                     <div class="flex-grow-1 overflow-hidden">
-                        <h5 class="fw-bold mb-0 text-truncate text-dark">{{ $supplier->name }}</h5>
+                        <h5 class="fw-bold mb-0 text-truncate text-dark" title="{{ $supplier->name }}">{{ $supplier->name }}</h5>
                         <div class="d-flex align-items-center gap-2 small text-muted">
                             <i class="bi bi-geo-alt-fill text-danger"></i>
                             <span>{{ $supplier->city }}, {{ $supplier->department }}</span>
                         </div>
                     </div>
                     @if($supplier->is_verified)
-                        <span class="badge bg-success-subtle text-success border border-success border-opacity-25 rounded-pill px-2 py-1" title="Verificado por Dropi">
-                            <i class="bi bi-patch-check-fill"></i> Verificado
+                        <span class="badge bg-success-subtle text-success border border-success border-opacity-25 rounded-pill px-2 py-1" title="Bodega Verificada Dropi">
+                            <i class="bi bi-patch-check-fill"></i> Verificada
                         </span>
                     @endif
                 </div>
@@ -67,6 +79,13 @@
                 <p class="small text-muted mb-3 flex-grow-1">
                     {{ $supplier->description ?: 'Proveedor mayorista de productos de alta rotación para dropshipping en Colombia.' }}
                 </p>
+
+                @if($supplier->warehouse_address)
+                    <div class="small text-muted mb-3 d-flex align-items-center gap-1">
+                        <i class="bi bi-box-seam text-primary"></i>
+                        <span class="text-truncate"><strong>Bodega:</strong> {{ $supplier->warehouse_address }}</span>
+                    </div>
+                @endif
 
                 <!-- Stats -->
                 <div class="bg-light rounded-3 p-3 mb-3 small d-flex justify-content-between text-center border">
@@ -79,14 +98,14 @@
                         <strong class="text-primary">{{ $supplier->catalog_products_count }} productos</strong>
                     </div>
                     <div class="border-start ps-3">
-                        <span class="text-muted d-block" style="font-size: 0.75rem;">Importados</span>
-                        <strong class="text-dark">{{ $supplier->products_count }} en tienda</strong>
+                        <span class="text-muted d-block" style="font-size: 0.75rem;">En Tu Tienda</span>
+                        <strong class="text-dark">{{ $supplier->products_count }} importados</strong>
                     </div>
                 </div>
 
                 <div class="d-flex gap-2 mt-auto">
                     <a href="{{ route('admin.suppliers.show', $supplier->id) }}" class="btn btn-outline-primary btn-sm rounded-pill flex-grow-1 fw-semibold">
-                        <i class="bi bi-box-seam me-1"></i> Ver Catálogo
+                        <i class="bi bi-box-seam me-1"></i> Ver Bodega
                     </a>
                     <a href="{{ route('admin.dropi.catalog', ['supplier_id' => $supplier->id]) }}" class="btn btn-primary btn-sm rounded-pill px-3 fw-semibold">
                         <i class="bi bi-download me-1"></i> Importar
@@ -99,8 +118,8 @@
             <div class="card border-0 shadow-sm rounded-4 text-center py-5 bg-white">
                 <div class="py-4">
                     <i class="bi bi-building fs-1 text-muted mb-3 d-block"></i>
-                    <h5 class="fw-bold mb-2">No se encontraron proveedores</h5>
-                    <p class="text-muted small">Intenta buscar con otros términos o registra un nuevo proveedor.</p>
+                    <h5 class="fw-bold mb-2">No se encontraron bodegas con los filtros actuales</h5>
+                    <p class="text-muted small">Intenta buscar con otros términos de búsqueda.</p>
                 </div>
             </div>
         </div>
