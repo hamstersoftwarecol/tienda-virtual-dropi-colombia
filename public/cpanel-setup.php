@@ -75,7 +75,8 @@ header('Content-Type: text/html; charset=utf-8');
         <div class="d-flex flex-wrap gap-2 mb-4">
             <a href="?token=<?= htmlspecialchars($securityToken) ?>&action=status" class="btn btn-outline-secondary btn-sm rounded-pill">Ver Estado</a>
             <a href="?token=<?= htmlspecialchars($securityToken) ?>&action=migrate" class="btn btn-outline-primary btn-sm rounded-pill">Ejecutar Migraciones</a>
-            <a href="?token=<?= htmlspecialchars($securityToken) ?>&action=migrate_seed" class="btn btn-primary btn-sm rounded-pill">Migrar y Poblar Datos (Seed)</a>
+            <a href="?token=<?= htmlspecialchars($securityToken) ?>&action=clear_demo" class="btn btn-danger btn-sm rounded-pill">🧹 Limpiar Todos los Datos Demo (Dejar solo Admin)</a>
+            <a href="?token=<?= htmlspecialchars($securityToken) ?>&action=migrate_seed" class="btn btn-outline-warning btn-sm rounded-pill">Restaurar Datos Demo</a>
             <a href="?token=<?= htmlspecialchars($securityToken) ?>&action=storage_link" class="btn btn-outline-info btn-sm rounded-pill">Crear Storage Link</a>
             <a href="?token=<?= htmlspecialchars($securityToken) ?>&action=optimize" class="btn btn-outline-success btn-sm rounded-pill">Optimizar Caché</a>
         </div>
@@ -84,6 +85,11 @@ header('Content-Type: text/html; charset=utf-8');
             <?php
             try {
                 switch ($action) {
+                    case 'clear_demo':
+                        \Illuminate\Support\Facades\Artisan::call('store:clear-demo');
+                        echo nl2br(\Illuminate\Support\Facades\Artisan::output());
+                        break;
+
                     case 'migrate':
                         \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
                         echo nl2br(\Illuminate\Support\Facades\Artisan::output());
