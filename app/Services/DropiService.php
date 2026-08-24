@@ -90,27 +90,16 @@ class DropiService
 
         foreach ($endpoints as $url) {
             try {
-                // Try GET
                 $response = Http::withToken($token)
                     ->withHeaders([
                         'Accept' => 'application/json',
                         'X-Dropi-Token' => $token,
-                        'token' => $token,
+                        'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                        'Origin' => 'https://app.dropi.co',
+                        'Referer' => 'https://app.dropi.co/dashboard/providers',
                     ])
                     ->timeout(10)
                     ->get($url);
-
-                if (!$response->successful()) {
-                    // Try POST with country CO
-                    $response = Http::withToken($token)
-                        ->withHeaders([
-                            'Accept' => 'application/json',
-                            'X-Dropi-Token' => $token,
-                            'token' => $token,
-                        ])
-                        ->timeout(10)
-                        ->post($url, ['country' => 'CO']);
-                }
 
                 if ($response->successful()) {
                     $json = $response->json();
@@ -123,6 +112,8 @@ class DropiService
                     $json = $response->json();
                     if (!empty($json['message'])) {
                         $lastError = $json['message'];
+                    } else {
+                        $lastError = 'HTTP ' . $response->status();
                     }
                 }
             } catch (\Exception $e) {
