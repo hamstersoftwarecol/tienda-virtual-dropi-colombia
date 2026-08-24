@@ -27,3 +27,4 @@ Thumbs.db
 *.sqlite-journal
 database/database.sqlite
 database/database.sqlite-journal
+*.zip
