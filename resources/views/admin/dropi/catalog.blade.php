@@ -22,66 +22,6 @@
     </div>
 </div>
 
-@if(!empty($apiError))
-    <div class="alert alert-warning border-0 shadow-sm rounded-4 p-4 mb-4">
-        <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
-            <div class="d-flex align-items-start gap-3">
-                <i class="bi bi-info-circle-fill text-warning fs-3 mt-1"></i>
-                <div>
-                    <h6 class="fw-bold text-dark mb-1">Estado de Conexión Dropi API:</h6>
-                    <p class="small text-muted mb-0">
-                        {{ $apiError }}
-                    </p>
-                </div>
-            </div>
-            <div class="d-flex gap-2">
-                <button type="button" class="btn btn-warning btn-sm rounded-pill px-3 fw-bold text-nowrap" data-bs-toggle="modal" data-bs-target="#updateTokenModal">
-                    <i class="bi bi-key-fill me-1"></i> Pegar Token Dropi
-                </button>
-                <a href="{{ route('admin.integrations.index') }}" class="btn btn-outline-dark btn-sm rounded-pill px-3 text-nowrap">
-                    Ver Integraciones
-                </a>
-            </div>
-        </div>
-    </div>
-@endif
-
-<!-- Modal Actualizar Token Dropi Rápido -->
-<div class="modal fade" id="updateTokenModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 rounded-4 shadow">
-            <div class="modal-header border-bottom px-4 py-3 bg-light rounded-top-4">
-                <h5 class="modal-title fw-bold text-dark d-flex align-items-center gap-2">
-                    <i class="bi bi-key-fill text-warning"></i> Actualizar Token de Dropi
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <form action="{{ route('admin.integrations.dropi.settings') }}" method="POST">
-                @csrf
-                <input type="hidden" name="api_url" value="https://api.dropi.co/api/products/supplier/v1?user_id=441247">
-                <input type="hidden" name="default_carrier" value="Coordinadora">
-                <input type="hidden" name="default_markup_percent" value="40">
-                <input type="hidden" name="auto_sync_orders" value="1">
-                <div class="modal-body px-4 py-3">
-                    <p class="small text-muted mb-3">
-                        Pega el Token de sesión o API de tu cuenta Dropi (desde <a href="https://app.dropi.co" target="_blank" class="fw-bold text-decoration-none">app.dropi.co</a>) para sincronizar los productos de tu catálogo automáticamente.
-                    </p>
-                    <div class="mb-3">
-                        <label class="form-label small fw-bold">Token de Autenticación Dropi *</label>
-                        <textarea name="auth_token" rows="4" class="form-control font-monospace small rounded-3" placeholder="eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9..." required></textarea>
-                    </div>
-                </div>
-                <div class="modal-footer border-top px-4 py-3">
-                    <button type="button" class="btn btn-light rounded-pill px-3" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-primary rounded-pill px-4 fw-bold">
-                        <i class="bi bi-save me-1"></i> Guardar y Sincronizar
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
 <!-- Modal: Importar Producto Individual por API / Datos Reales -->
 <div class="modal fade" id="customDropiProductModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered">
@@ -319,17 +259,14 @@
                     
                     <div class="d-flex flex-wrap justify-content-center gap-2">
                         <button type="button" class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#customDropiProductModal">
-                            <i class="bi bi-plus-circle-fill me-1"></i> + Importar Producto Real Dropi
+                            <i class="bi bi-plus-circle-fill me-1"></i> + Importar Producto Dropi (Individual)
                         </button>
                         <form action="{{ route('admin.dropi.catalog.sync_api') }}" method="POST" class="d-inline">
                             @csrf
                             <button type="submit" class="btn btn-outline-primary rounded-pill px-3 shadow-sm fw-semibold">
-                                <i class="bi bi-arrow-repeat me-1"></i> Sincronizar desde API
+                                <i class="bi bi-arrow-repeat me-1"></i> Sincronizar desde Dropi API
                             </button>
                         </form>
-                        <button type="button" class="btn btn-outline-warning rounded-pill px-3 fw-semibold text-dark" data-bs-toggle="modal" data-bs-target="#updateTokenModal">
-                            <i class="bi bi-key-fill text-warning me-1"></i> Pegar Token Dropi
-                        </button>
                     </div>
                 </div>
             </div>

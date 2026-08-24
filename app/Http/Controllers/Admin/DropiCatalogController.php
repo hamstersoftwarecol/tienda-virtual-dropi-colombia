@@ -21,22 +21,13 @@ class DropiCatalogController extends Controller
 
     public function index(Request $request)
     {
-        $apiError = null;
-
-        if (SupplierProduct::count() === 0) {
-            $result = $this->dropiService->syncFromDropiApi();
-            if (!$result['success'] && !empty($result['message'])) {
-                $apiError = $result['message'];
-            }
-        }
-
         $filters = $request->only(['q', 'category', 'is_imported', 'min_price', 'max_price', 'sort']);
         $supplierProducts = $this->dropiService->searchSupplierProducts($filters);
         $suppliers = collect();
         $categories = Category::all();
         $settings = DropiSetting::getSettings();
 
-        return view('admin.dropi.catalog', compact('supplierProducts', 'suppliers', 'categories', 'settings', 'apiError'));
+        return view('admin.dropi.catalog', compact('supplierProducts', 'suppliers', 'categories', 'settings'));
     }
 
     public function syncApi(Request $request)
