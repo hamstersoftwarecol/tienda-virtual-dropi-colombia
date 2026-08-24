@@ -1,70 +1,37 @@
 @extends('layouts.admin')
 
-@section('title', 'Importador de Productos Dropi')
+@section('title', 'Importador Individual Dropi')
 @section('page_header', 'Importador de Productos Dropi / Proveedores')
 
 @section('content')
 <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
     <div>
-        <h4 class="fw-bold mb-1 text-dark"><i class="bi bi-cloud-arrow-down text-primary me-2"></i>Catálogo Mayorista Dropi (Colombia)</h4>
-        <p class="text-muted small mb-0">Selecciona o personaliza productos de Dropi: edita nombre, imágenes, precio de venta en COP, descripción, cantidad y categoría antes de importar.</p>
+        <h4 class="fw-bold mb-1 text-dark"><i class="bi bi-cloud-arrow-down text-primary me-2"></i>Importador Individual Dropi (Colombia)</h4>
+        <p class="text-muted small mb-0">Importa tus productos reales de Dropi: nombre, imágenes, costo mayorista, precio de venta en COP, cantidad, descripción y categoría.</p>
     </div>
     <div class="d-flex flex-wrap gap-2">
-        <button type="button" class="btn btn-success rounded-pill px-3 fw-bold shadow-sm d-flex align-items-center gap-2" data-bs-toggle="modal" data-bs-target="#customDropiProductModal">
-            <i class="bi bi-plus-circle-fill"></i> Importar Producto por API / Datos
+        <button type="button" class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm d-flex align-items-center gap-2" data-bs-toggle="modal" data-bs-target="#customDropiProductModal">
+            <i class="bi bi-plus-circle-fill"></i> + Importar Producto Dropi (Individual)
         </button>
-        <button type="button" class="btn btn-warning rounded-pill px-3 fw-bold shadow-sm d-flex align-items-center gap-2" data-bs-toggle="modal" data-bs-target="#importAllCatalogModal">
-            <i class="bi bi-cloud-arrow-down-fill"></i> Importar Todo el Catálogo
-        </button>
+        <form action="{{ route('admin.dropi.catalog.sync_api') }}" method="POST" class="d-inline">
+            @csrf
+            <button type="submit" class="btn btn-outline-primary rounded-pill px-3 shadow-sm d-flex align-items-center gap-2" title="Sincronizar productos disponibles desde la API de Dropi">
+                <i class="bi bi-arrow-repeat"></i> Sincronizar desde Dropi API
+            </button>
+        </form>
         <a href="{{ route('admin.suppliers.index') }}" class="btn btn-outline-secondary rounded-pill px-3">
-            <i class="bi bi-building me-1"></i> Ver Bodegas
+            <i class="bi bi-building me-1"></i> Bodegas
         </a>
     </div>
 </div>
 
-<!-- Modal Importar Todo Dropi -->
-<div class="modal fade" id="importAllCatalogModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 rounded-4 shadow">
-            <div class="modal-header border-0 pb-0 px-4 pt-4">
-                <h5 class="modal-title fw-bold text-dark d-flex align-items-center gap-2">
-                    <i class="bi bi-cloud-arrow-down-fill text-primary"></i> Importar Todo el Catálogo Dropi
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <form action="{{ route('admin.dropi.catalog.import_all') }}" method="POST">
-                @csrf
-                <div class="modal-body px-4 py-3">
-                    <p class="text-muted small mb-3">
-                        Se importarán todos los productos disponibles de Dropi a tu tienda virtual con margen calculado en COP.
-                    </p>
-                    <div class="mb-3">
-                        <label class="form-label fw-bold small">Margen de Ganancia Global (%)</label>
-                        <div class="input-group">
-                            <input type="number" name="markup_percent" class="form-control rounded-start-3" value="40" min="1" max="500" required>
-                            <span class="input-group-text rounded-end-3 bg-light fw-bold">% sobre costo</span>
-                        </div>
-                        <div class="form-text small text-muted">Ejemplo: Con 40%, un producto de $50.000 COP se publicará a $70.000 COP.</div>
-                    </div>
-                </div>
-                <div class="modal-footer border-0 px-4 pb-4 pt-0">
-                    <button type="button" class="btn btn-light rounded-pill px-3" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-primary rounded-pill px-4 fw-bold">
-                        <i class="bi bi-cloud-arrow-down-fill me-1"></i> Iniciar Importación Completa
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
-<!-- Modal Importar Producto Nuevo Manualmente por API -->
+<!-- Modal: Importar Producto Individual por API / Datos Reales -->
 <div class="modal fade" id="customDropiProductModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content border-0 rounded-4 shadow">
-            <div class="modal-header border-bottom px-4 py-3">
+            <div class="modal-header border-bottom px-4 py-3 bg-light rounded-top-4">
                 <h5 class="modal-title fw-bold text-dark d-flex align-items-center gap-2">
-                    <i class="bi bi-plus-circle-fill text-success"></i> Importar Producto Individual Dropi
+                    <i class="bi bi-box-seam-fill text-primary"></i> Importar Producto Real Dropi
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
@@ -72,74 +39,88 @@
                 @csrf
                 <div class="modal-body px-4 py-3">
                     <div class="row g-3">
+                        <!-- Nombre del Producto -->
                         <div class="col-md-8">
                             <label class="form-label fw-bold small">Nombre del Producto *</label>
-                            <input type="text" name="name" class="form-control rounded-3" placeholder="Ej: Mini Proyector Portátil HD 1080P" required>
+                            <input type="text" name="name" class="form-control rounded-3" placeholder="Ej: Trípode Profesional con Anillo LED 12 Pulgadas" required>
                         </div>
                         <div class="col-md-4">
                             <label class="form-label fw-bold small">SKU / ID Dropi</label>
-                            <input type="text" name="sku" class="form-control rounded-3 font-monospace" placeholder="DRP-PROD-001">
+                            <input type="text" name="sku" class="form-control rounded-3 font-monospace" placeholder="DRP-12345">
                         </div>
 
-                        <div class="col-md-6">
+                        <!-- Imágenes del Producto -->
+                        <div class="col-md-7">
                             <label class="form-label fw-bold small">URL de la Imagen Principal *</label>
-                            <input type="url" name="image" id="customProductImageInput" class="form-control rounded-3" placeholder="https://images.unsplash.com/..." oninput="document.getElementById('customImgPreview').src = this.value" required>
+                            <input type="url" name="image" id="customProductImageInput" class="form-control rounded-3" placeholder="https://..." oninput="document.getElementById('customImgPreview').src = this.value" required>
+                            <small class="text-muted" style="font-size: 0.75rem;">Pega el enlace directo de la imagen del producto.</small>
                         </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-bold small">Categoría</label>
-                            <div class="input-group">
-                                <select name="category_id" class="form-select rounded-start-3">
-                                    <option value="">Seleccionar o escribir nueva...</option>
-                                    @foreach($categories as $cat)
-                                        <option value="{{ $cat->id }}">{{ $cat->name }}</option>
-                                    @endforeach
-                                </select>
-                                <input type="text" name="category_name" class="form-control rounded-end-3" placeholder="O nueva categoría">
+                        <div class="col-md-5 text-center">
+                            <div class="border rounded-3 p-2 bg-light d-flex align-items-center justify-content-center" style="height: 100px;">
+                                <img id="customImgPreview" src="https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=300" alt="Vista previa" class="h-100 object-fit-contain rounded">
                             </div>
                         </div>
 
+                        <!-- Categoría -->
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold small">Categoría en Tienda</label>
+                            <select name="category_id" class="form-select rounded-3">
+                                <option value="">Seleccionar existente...</option>
+                                @foreach($categories as $cat)
+                                    <option value="{{ $cat->id }}">{{ $cat->name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold small">O Nueva Categoría</label>
+                            <input type="text" name="category_name" class="form-control rounded-3" placeholder="Ej: Tecnología, Belleza, Hogar">
+                        </div>
+
+                        <!-- Precios de Descripción y Ganancia -->
                         <div class="col-md-4">
-                            <label class="form-label fw-bold small">Precio Mayorista Dropi ($ COP) *</label>
+                            <label class="form-label fw-bold small">Costo Mayorista Dropi ($ COP) *</label>
                             <div class="input-group">
                                 <span class="input-group-text">$</span>
-                                <input type="number" step="500" name="wholesale_price" id="customWholesalePrice" class="form-control" value="50000" required oninput="calcCustomProfit()">
+                                <input type="number" step="500" name="wholesale_price" id="customWholesalePrice" class="form-control" value="45000" required oninput="calcCustomProfit()">
                             </div>
                         </div>
                         <div class="col-md-4">
                             <label class="form-label fw-bold small">Precio de Venta al Público ($ COP) *</label>
                             <div class="input-group">
                                 <span class="input-group-text">$</span>
-                                <input type="number" step="500" name="sale_price" id="customSalePrice" class="form-control fw-bold" value="85000" required oninput="calcCustomProfit()">
+                                <input type="number" step="500" name="sale_price" id="customSalePrice" class="form-control fw-bold text-primary" value="79000" required oninput="calcCustomProfit()">
                             </div>
                         </div>
                         <div class="col-md-4">
-                            <label class="form-label fw-bold small">Cantidad en Stock</label>
-                            <input type="number" name="stock" class="form-control rounded-3" value="50" min="0">
+                            <label class="form-label fw-bold small">Cantidad en Stock *</label>
+                            <input type="number" name="stock" class="form-control rounded-3" value="30" min="0" required>
                         </div>
 
+                        <!-- Profit card -->
                         <div class="col-12">
                             <div class="alert alert-success d-flex justify-content-between align-items-center rounded-3 p-3 mb-0">
                                 <div>
-                                    <span class="small text-muted d-block">Ganancia Estimada por Unidad:</span>
-                                    <strong id="customCalculatedProfit" class="text-success fs-5">$ 35.000 COP</strong>
+                                    <span class="small text-muted d-block">Tu Ganancia Neta por Venta:</span>
+                                    <strong id="customCalculatedProfit" class="text-success fs-5">$ 34.000 COP</strong>
                                 </div>
-                                <span id="customCalculatedMargin" class="badge bg-success fs-6 px-3 py-2">70% Margen</span>
+                                <span id="customCalculatedMargin" class="badge bg-success fs-6 px-3 py-2">76% Margen</span>
                             </div>
                         </div>
 
+                        <!-- Descripciones -->
                         <div class="col-12">
                             <label class="form-label fw-bold small">Descripción Corta</label>
-                            <textarea name="short_description" rows="2" class="form-control rounded-3" placeholder="Resumen clave de las características del producto"></textarea>
+                            <textarea name="short_description" rows="2" class="form-control rounded-3" placeholder="Resumen clave del producto que verá el comprador"></textarea>
                         </div>
                         <div class="col-12">
                             <label class="form-label fw-bold small">Descripción Completa</label>
-                            <textarea name="description" rows="4" class="form-control rounded-3" placeholder="Detalles técnicos, garantía, materiales, qué incluye la caja..."></textarea>
+                            <textarea name="description" rows="4" class="form-control rounded-3" placeholder="Detalles técnicos, materiales, contenido de la caja y garantía"></textarea>
                         </div>
                     </div>
                 </div>
                 <div class="modal-footer border-top px-4 py-3">
                     <button type="button" class="btn btn-light rounded-pill px-3" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-success rounded-pill px-4 fw-bold">
+                    <button type="submit" class="btn btn-primary rounded-pill px-4 fw-bold">
                         <i class="bi bi-cloud-check-fill me-1"></i> Publicar en Mi Tienda
                     </button>
                 </div>
@@ -151,25 +132,14 @@
 <!-- Filters Bar -->
 <div class="card border-0 shadow-sm rounded-4 bg-white p-3 mb-4">
     <form action="{{ route('admin.dropi.catalog') }}" method="GET" class="row g-2 align-items-center">
-        <div class="col-md-3">
+        <div class="col-md-4">
             <div class="input-group input-group-sm">
                 <span class="input-group-text bg-light border-end-0"><i class="bi bi-search text-muted"></i></span>
-                <input type="text" name="q" value="{{ request('q') }}" class="form-control border-start-0" placeholder="Buscar por producto o SKU...">
+                <input type="text" name="q" value="{{ request('q') }}" class="form-control border-start-0" placeholder="Buscar por nombre o SKU...">
             </div>
         </div>
 
         <div class="col-md-3">
-            <select name="supplier_id" class="form-select form-select-sm" onchange="this.form.submit()">
-                <option value="">Todas las Bodegas / Proveedores</option>
-                @foreach($suppliers as $sup)
-                    <option value="{{ $sup->id }}" {{ request('supplier_id') == $sup->id ? 'selected' : '' }}>
-                        {{ $sup->name }} ({{ $sup->city }})
-                    </option>
-                @endforeach
-            </select>
-        </div>
-
-        <div class="col-md-2">
             <select name="is_imported" class="form-select form-select-sm" onchange="this.form.submit()">
                 <option value="">Todos los Estados</option>
                 <option value="0" {{ request('is_imported') === '0' ? 'selected' : '' }}>No Importados</option>
@@ -177,7 +147,7 @@
             </select>
         </div>
 
-        <div class="col-md-2">
+        <div class="col-md-3">
             <select name="sort" class="form-select form-select-sm" onchange="this.form.submit()">
                 <option value="latest" {{ request('sort') === 'latest' ? 'selected' : '' }}>Más Recientes</option>
                 <option value="profit_desc" {{ request('sort') === 'profit_desc' ? 'selected' : '' }}>Mayor Ganancia COP</option>
@@ -188,132 +158,102 @@
 
         <div class="col-md-2 d-flex gap-1">
             <button type="submit" class="btn btn-sm btn-primary rounded-pill w-100">Filtrar</button>
-            @if(request()->hasAny(['q', 'supplier_id', 'is_imported', 'sort']))
+            @if(request()->hasAny(['q', 'is_imported', 'sort']))
                 <a href="{{ route('admin.dropi.catalog') }}" class="btn btn-sm btn-outline-secondary rounded-pill" title="Limpiar"><i class="bi bi-x-lg"></i></a>
             @endif
         </div>
     </form>
 </div>
 
-<!-- Bulk Import Bar (Form wrapper) -->
-<form action="{{ route('admin.dropi.catalog.bulk') }}" method="POST" id="bulkImportForm">
-    @csrf
-    <div class="card border-0 shadow-sm rounded-4 bg-primary-subtle border-primary border-opacity-25 p-3 mb-4 d-flex flex-wrap justify-content-between align-items-center gap-3">
-        <div class="d-flex align-items-center gap-3">
-            <div class="form-check ms-2">
-                <input class="form-check-input" type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAll(this)">
-                <label class="form-check-label fw-bold text-dark small" for="selectAllCheckbox">
-                    Seleccionar Varios (<span id="selectedCount">0</span> seleccionados)
-                </label>
-            </div>
-            <div class="d-flex align-items-center gap-2">
-                <label class="small text-muted fw-semibold text-nowrap">Margen de Ganancia:</label>
-                <div class="input-group input-group-sm" style="width: 130px;">
-                    <input type="number" name="markup_percent" value="{{ $settings->default_markup_percent ?: 40 }}" class="form-control text-center" min="5" max="300">
-                    <span class="input-group-text">%</span>
+<!-- Products Grid -->
+<div class="row g-4 mb-4">
+    @forelse($supplierProducts as $sp)
+        <div class="col-md-6 col-lg-4 col-xl-3">
+            <div class="card border-0 shadow-sm rounded-4 bg-white h-100 d-flex flex-column overflow-hidden position-relative hover-lift">
+                <!-- Image & Badges -->
+                <div class="position-relative bg-light text-center overflow-hidden" style="height: 180px;">
+                    <img src="{{ $sp->image }}" alt="{{ $sp->name }}" class="w-100 h-100 object-fit-cover">
+                    @if($sp->is_imported)
+                        <span class="position-absolute top-0 end-0 m-2 badge bg-success rounded-pill px-2 py-1">
+                            <i class="bi bi-check-circle-fill"></i> Importado
+                        </span>
+                    @endif
                 </div>
-            </div>
-        </div>
 
-        <div class="d-flex gap-2">
-            <button type="submit" class="btn btn-primary btn-sm rounded-pill px-4 fw-bold shadow-sm" id="bulkImportBtn" disabled>
-                <i class="bi bi-download me-1"></i> Importar Seleccionados a Tienda
-            </button>
-        </div>
-    </div>
+                <!-- Body -->
+                <div class="card-body p-3 d-flex flex-column">
+                    <small class="text-muted text-uppercase mb-1" style="font-size: 0.7rem;">{{ $sp->category_name }}</small>
+                    <h6 class="fw-bold text-dark mb-2 text-truncate" title="{{ $sp->name }}">{{ $sp->name }}</h6>
 
-    <!-- Products Grid -->
-    <div class="row g-4 mb-4">
-        @forelse($supplierProducts as $sp)
-            <div class="col-md-6 col-lg-4 col-xl-3">
-                <div class="card border-0 shadow-sm rounded-4 bg-white h-100 d-flex flex-column overflow-hidden position-relative hover-lift">
-                    <!-- Checkbox overlay -->
-                    <div class="position-absolute top-0 start-0 m-2 z-3">
-                        <input class="form-check-input p-2 product-checkbox shadow-sm" type="checkbox" name="product_ids[]" value="{{ $sp->id }}" onchange="updateSelectedCount()" {{ $sp->is_imported ? 'disabled' : '' }}>
+                    <!-- Pricing Breakdown in COP -->
+                    <div class="bg-light p-2 rounded-3 mb-3 small border">
+                        <div class="d-flex justify-content-between mb-1">
+                            <span class="text-muted">Costo Dropi:</span>
+                            <strong class="text-dark">{{ format_cop($sp->wholesale_price) }}</strong>
+                        </div>
+                        <div class="d-flex justify-content-between mb-1">
+                            <span class="text-muted">Venta Sugerida:</span>
+                            <strong class="text-primary">{{ format_cop($sp->suggested_price) }}</strong>
+                        </div>
+                        <div class="d-flex justify-content-between pt-1 border-top text-success fw-bold">
+                            <span>Tu Ganancia:</span>
+                            <span>+{{ format_cop($sp->potential_profit) }} ({{ $sp->margin_percent }}%)</span>
+                        </div>
                     </div>
 
-                    <!-- Image & Badges -->
-                    <div class="position-relative bg-light text-center overflow-hidden" style="height: 180px;">
-                        <img src="{{ $sp->image }}" alt="{{ $sp->name }}" class="w-100 h-100 object-fit-cover">
-                        <span class="position-absolute bottom-0 end-0 m-2 badge bg-dark bg-opacity-75 rounded-pill small">
-                            <i class="bi bi-building"></i> {{ $sp->supplier ? $sp->supplier->city : 'Dropi' }}
-                        </span>
+                    <!-- Stock Info -->
+                    <div class="d-flex justify-content-between align-items-center small text-muted mb-3">
+                        <span><i class="bi bi-box me-1"></i> Stock: <strong>{{ $sp->stock }}</strong></span>
+                        <span>{{ $sp->sku }}</span>
+                    </div>
+
+                    <!-- Import Action Button -->
+                    <div class="mt-auto">
                         @if($sp->is_imported)
-                            <span class="position-absolute top-0 end-0 m-2 badge bg-success rounded-pill px-2 py-1">
-                                <i class="bi bi-check-circle-fill"></i> Importado
-                            </span>
+                            <div class="d-grid">
+                                <a href="{{ route('admin.products.index', ['q' => $sp->sku]) }}" class="btn btn-outline-success btn-sm rounded-pill">
+                                    <i class="bi bi-check-circle-fill me-1"></i> Ver en Tienda
+                                </a>
+                            </div>
+                        @else
+                            <div class="d-grid">
+                                <button type="button" class="btn btn-primary btn-sm rounded-pill fw-semibold import-single-btn"
+                                        data-id="{{ $sp->id }}"
+                                        data-name="{{ $sp->name }}"
+                                        data-wholesale="{{ (float) $sp->wholesale_price }}"
+                                        data-suggested="{{ (float) $sp->suggested_price }}"
+                                        data-image="{{ $sp->image }}"
+                                        data-sku="{{ $sp->sku }}"
+                                        data-stock="{{ $sp->stock }}"
+                                        data-category="{{ $sp->category_name }}"
+                                        data-short-desc="{{ $sp->short_description }}"
+                                        data-description="{{ $sp->description }}">
+                                    <i class="bi bi-download me-1"></i> Personalizar e Importar
+                                </button>
+                            </div>
                         @endif
                     </div>
-
-                    <!-- Body -->
-                    <div class="card-body p-3 d-flex flex-column">
-                        <small class="text-muted text-uppercase mb-1" style="font-size: 0.7rem;">{{ $sp->category_name }}</small>
-                        <h6 class="fw-bold text-dark mb-2 text-truncate" title="{{ $sp->name }}">{{ $sp->name }}</h6>
-
-                        <!-- Pricing Breakdown in COP -->
-                        <div class="bg-light p-2 rounded-3 mb-3 small border">
-                            <div class="d-flex justify-content-between mb-1">
-                                <span class="text-muted">Costo Proveedor:</span>
-                                <strong class="text-dark">{{ format_cop($sp->wholesale_price) }}</strong>
-                            </div>
-                            <div class="d-flex justify-content-between mb-1">
-                                <span class="text-muted">Venta Sugerida:</span>
-                                <strong class="text-primary">{{ format_cop($sp->suggested_price) }}</strong>
-                            </div>
-                            <div class="d-flex justify-content-between pt-1 border-top text-success fw-bold">
-                                <span>Tu Ganancia:</span>
-                                <span>+{{ format_cop($sp->potential_profit) }} ({{ $sp->margin_percent }}%)</span>
-                            </div>
-                        </div>
-
-                        <!-- Stock & Bodega Info -->
-                        <div class="d-flex justify-content-between align-items-center small text-muted mb-3">
-                            <span><i class="bi bi-box me-1"></i> Stock: <strong>{{ $sp->stock }}</strong></span>
-                            <span>{{ $sp->supplier ? Str::limit($sp->supplier->name, 15) : 'Dropi Bodega' }}</span>
-                        </div>
-
-                        <!-- Import Action Button -->
-                        <div class="mt-auto">
-                            @if($sp->is_imported)
-                                <div class="d-grid">
-                                    <a href="{{ route('admin.products.index', ['q' => $sp->sku]) }}" class="btn btn-outline-success btn-sm rounded-pill">
-                                        <i class="bi bi-check-circle-fill me-1"></i> Ver en Tienda
-                                    </a>
-                                </div>
-                            @else
-                                <div class="d-grid">
-                                    <button type="button" class="btn btn-primary btn-sm rounded-pill fw-semibold import-single-btn"
-                                            data-id="{{ $sp->id }}"
-                                            data-name="{{ $sp->name }}"
-                                            data-wholesale="{{ (float) $sp->wholesale_price }}"
-                                            data-suggested="{{ (float) $sp->suggested_price }}"
-                                            data-image="{{ $sp->image }}"
-                                            data-sku="{{ $sp->sku }}"
-                                            data-stock="{{ $sp->stock }}"
-                                            data-category="{{ $sp->category_name }}"
-                                            data-short-desc="{{ $sp->short_description }}"
-                                            data-description="{{ $sp->description }}">
-                                        <i class="bi bi-download me-1"></i> Importar a Mi Tienda
-                                    </button>
-                                </div>
-                            @endif
-                        </div>
-                    </div>
                 </div>
             </div>
-        @empty
-            <div class="col-12">
-                <div class="card border-0 shadow-sm rounded-4 text-center py-5 bg-white">
-                    <div class="py-4">
-                        <i class="bi bi-search fs-1 text-muted mb-3 d-block"></i>
-                        <h5 class="fw-bold mb-2">No se encontraron productos en el catálogo de proveedores</h5>
-                        <p class="text-muted small">Haz clic en el botón superior para importar productos por API o datos de Dropi.</p>
+        </div>
+    @empty
+        <div class="col-12">
+            <div class="card border-0 shadow-sm rounded-4 text-center py-5 bg-white">
+                <div class="py-4 px-3" style="max-width: 550px; margin: 0 auto;">
+                    <div class="stat-icon bg-primary-subtle text-primary mx-auto mb-3" style="width: 64px; height: 64px; font-size: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                        <i class="bi bi-box-arrow-in-down"></i>
                     </div>
+                    <h5 class="fw-bold mb-2">Catálogo Dropi Listo para Tus Productos Reales</h5>
+                    <p class="text-muted small mb-4">No hay productos de prueba. Puedes agregar tus productos de Dropi de manera individual con todos sus detalles (imágenes, precios en COP, cantidad, descripción y categoría) o sincronizar con tu API.</p>
+                    
+                    <button type="button" class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#customDropiProductModal">
+                        <i class="bi bi-plus-circle-fill me-1"></i> + Importar Mi Primer Producto Dropi
+                    </button>
                 </div>
             </div>
-        @endforelse
-    </div>
-</form>
+        </div>
+    @endforelse
+</div>
 
 <div class="d-flex justify-content-center">
     {{ $supplierProducts->links('pagination::bootstrap-5') }}
@@ -323,9 +263,9 @@
 <div class="modal fade" id="singleImportModal" tabindex="-1" aria-labelledby="singleImportModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content rounded-4 border-0 shadow">
-            <div class="modal-header border-bottom px-4 py-3">
+            <div class="modal-header border-bottom px-4 py-3 bg-light rounded-top-4">
                 <h5 class="modal-title fw-bold text-dark" id="singleImportModalLabel">
-                    <i class="bi bi-cloud-download text-primary me-2"></i>Personalizar e Importar a Tienda Virtual
+                    <i class="bi bi-cloud-download text-primary me-2"></i>Personalizar e Importar a Mi Tienda
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
@@ -333,12 +273,11 @@
                 @csrf
                 <div class="modal-body px-4 py-3">
                     <div class="row g-3">
-                        <!-- Image Preview & Input -->
                         <div class="col-md-3 text-center">
                             <div class="border rounded-4 p-2 bg-light mb-2" style="height: 140px;">
                                 <img id="modalProductImgPreview" src="" alt="Vista previa" class="w-100 h-100 object-fit-cover rounded-3">
                             </div>
-                            <small class="text-muted d-block" style="font-size: 0.75rem;">Vista previa de imagen</small>
+                            <small class="text-muted d-block" style="font-size: 0.75rem;">Vista previa</small>
                         </div>
 
                         <div class="col-md-9">
@@ -354,7 +293,7 @@
                         </div>
 
                         <div class="col-md-4">
-                            <label class="form-label small fw-bold">Costo Proveedor ($ COP)</label>
+                            <label class="form-label small fw-bold">Costo Dropi ($ COP)</label>
                             <div class="input-group">
                                 <span class="input-group-text bg-light">$</span>
                                 <input type="number" name="wholesale_price" id="modalWholesaleInput" class="form-control bg-light" readonly>
@@ -362,7 +301,7 @@
                         </div>
 
                         <div class="col-md-4">
-                            <label for="modalSalePrice" class="form-label small fw-bold">Precio de Venta al Público ($ COP) *</label>
+                            <label for="modalSalePrice" class="form-label small fw-bold">Precio de Venta ($ COP) *</label>
                             <div class="input-group">
                                 <span class="input-group-text">$</span>
                                 <input type="number" step="500" name="sale_price" id="modalSalePrice" class="form-control fw-bold text-primary" required oninput="calculateModalProfit()">
@@ -370,11 +309,10 @@
                         </div>
 
                         <div class="col-md-4">
-                            <label for="modalProductStock" class="form-label small fw-bold">Cantidad / Stock Inicial</label>
+                            <label for="modalProductStock" class="form-label small fw-bold">Cantidad / Stock</label>
                             <input type="number" name="stock" id="modalProductStock" class="form-control rounded-3" min="0" value="25">
                         </div>
 
-                        <!-- Profit summary -->
                         <div class="col-12">
                             <div class="alert alert-success d-flex justify-content-between align-items-center rounded-3 p-3 mb-0">
                                 <div>
@@ -388,7 +326,7 @@
                         <div class="col-md-6">
                             <label for="modalCategory" class="form-label small fw-bold">Categoría</label>
                             <select name="category_id" id="modalCategory" class="form-select rounded-3">
-                                <option value="">Crear o asignar categoría automáticamente</option>
+                                <option value="">Crear o asignar automáticamente</option>
                                 @foreach($categories as $cat)
                                     <option value="{{ $cat->id }}">{{ $cat->name }}</option>
                                 @endforeach
@@ -396,7 +334,7 @@
                         </div>
 
                         <div class="col-md-6">
-                            <label for="modalProductSku" class="form-label small fw-bold">SKU / Código</label>
+                            <label for="modalProductSku" class="form-label small fw-bold">SKU / ID</label>
                             <input type="text" name="sku" id="modalProductSku" class="form-control rounded-3 font-monospace">
                         </div>
 
@@ -414,7 +352,7 @@
                 <div class="modal-footer border-top px-4 py-3">
                     <button type="button" class="btn btn-light rounded-pill px-3" data-bs-dismiss="modal">Cancelar</button>
                     <button type="submit" class="btn btn-primary rounded-pill px-4 fw-bold">
-                        <i class="bi bi-download me-1"></i> Confirmar e Importar Producto
+                        <i class="bi bi-download me-1"></i> Publicar en Tienda
                     </button>
                 </div>
             </form>
@@ -477,19 +415,6 @@
 
         document.getElementById('customCalculatedProfit').textContent = '$ ' + Math.round(profit).toLocaleString('es-CO') + ' COP';
         document.getElementById('customCalculatedMargin').textContent = margin + '% Margen';
-    }
-
-    function toggleSelectAll(master) {
-        document.querySelectorAll('.product-checkbox:not(:disabled)').forEach(cb => {
-            cb.checked = master.checked;
-        });
-        updateSelectedCount();
-    }
-
-    function updateSelectedCount() {
-        const checked = document.querySelectorAll('.product-checkbox:checked').length;
-        document.getElementById('selectedCount').textContent = checked;
-        document.getElementById('bulkImportBtn').disabled = checked === 0;
     }
 </script>
 @endpush

@@ -273,13 +273,11 @@ class DropiService
     }
 
     /**
-     * Import ALL products from Dropi / Supplier catalog at once
+     * Import ALL products from current Dropi catalog
      */
     public function importAll(int $markupPercent = 40, ?int $categoryId = null): int
     {
-        $this->ensureCatalogPopulated();
-
-        $supplierProducts = SupplierProduct::all();
+        $supplierProducts = SupplierProduct::where('is_imported', false)->get();
         $count = 0;
         foreach ($supplierProducts as $sp) {
             $this->importProduct($sp, null, $markupPercent, $categoryId);
@@ -290,192 +288,82 @@ class DropiService
     }
 
     /**
-     * Ensure verified suppliers and dropshipping catalog are populated
+     * Sync and fetch real products directly from Dropi API
      */
-    public function ensureCatalogPopulated(): void
+    public function syncFromDropiApi(int $page = 1, int $perPage = 50): array
     {
-        if (SupplierProduct::count() > 0 && Supplier::count() > 0) {
-            return;
+        if (empty($this->settings->auth_token) || empty($this->settings->api_url)) {
+            return [
+                'success' => false,
+                'message' => 'Falta configurar el Token de Autenticación de Dropi en el panel de integraciones.',
+                'synced' => 0,
+            ];
         }
 
-        // 1. Create or get Suppliers
-        $supMedellin = Supplier::firstOrCreate(
-            ['slug' => 'bodega-mayorista-medellin-tech'],
-            [
-                'name' => 'Bodega Mayorista Medellín Tech',
-                'city' => 'Medellín',
-                'department' => 'Antioquia',
-                'phone' => '+57 314 888 9900',
-                'email' => 'ventas@bodegamedellin.co',
-                'rating' => 4.9,
-                'logo' => 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=300',
-                'warehouse_address' => 'Zona Industrial Guayabal, Bodega 45',
-                'description' => 'Especialistas en electrónica, gadgets, smartwatches y accesorios para celular con despacho el mismo día.',
-                'is_verified' => true,
-                'is_active' => true,
-            ]
-        );
+        try {
+            $url = rtrim($this->settings->api_url, '/') . '/products';
+            $response = Http::withToken($this->settings->auth_token)
+                ->timeout(15)
+                ->get($url, [
+                    'page' => $page,
+                    'per_page' => $perPage,
+                ]);
 
-        $supBogota = Supplier::firstOrCreate(
-            ['slug' => 'importadora-bogota-express'],
-            [
-                'name' => 'Importadora Bogotá Express',
-                'city' => 'Bogotá D.C.',
-                'department' => 'Cundinamarca',
-                'phone' => '+57 310 777 6655',
-                'email' => 'contacto@bogotaexpress.co',
-                'rating' => 4.8,
-                'logo' => 'https://images.unsplash.com/photo-1553413077-190dd305871c?w=300',
-                'warehouse_address' => 'Parque Industrial Fontibón, Módulo C',
-                'description' => 'Importación directa de audio pro, cámaras 4K y tecnología de alta fidelidad para dropshipping.',
-                'is_verified' => true,
-                'is_active' => true,
-            ]
-        );
+            if ($response->successful()) {
+                $data = $response->json();
+                $items = $data['data'] ?? ($data['products'] ?? (is_array($data) ? $data : []));
+                $synced = 0;
 
-        $supCali = Supplier::firstOrCreate(
-            ['slug' => 'megabodega-cali-moda-hogar'],
-            [
-                'name' => 'MegaBodega Cali Moda & Hogar',
-                'city' => 'Cali',
-                'department' => 'Valle del Cauca',
-                'phone' => '+57 318 333 2211',
-                'email' => 'pedidos@calimoda.co',
-                'rating' => 4.7,
-                'logo' => 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=300',
-                'warehouse_address' => 'Acopi Yumbo, Calle 15 # 20-50',
-                'description' => 'Calzado urbano, mochilas antirrobo, chaquetas impermeables y artículos para el hogar.',
-                'is_verified' => true,
-                'is_active' => true,
-            ]
-        );
+                foreach ($items as $item) {
+                    if (empty($item['name']) && empty($item['title'])) {
+                        continue;
+                    }
 
-        // 2. Populate Catalog Products
-        $catalog = [
-            [
-                'dropi_id' => 'DRP-CAT-001',
-                'supplier_id' => $supMedellin->id,
-                'name' => 'Trípode Profesional con Anillo de Luz LED 12 Pulgadas',
-                'slug' => 'tripode-profesional-anillo-luz-led',
-                'sku' => 'DRP-LED-12',
-                'short_description' => 'Ideal para creadores de contenido, tiktokers y videollamadas con soporte de celular giratorio.',
-                'description' => 'Anillo de luz LED regulable con 3 modos de temperatura de color y 10 niveles de brillo. Trípode ajustable en altura de 45cm a 160cm con control remoto bluetooth.',
-                'wholesale_price' => 45000.00,
-                'suggested_price' => 79000.00,
-                'stock' => 85,
-                'image' => 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=800&auto=format&fit=crop&q=80',
-                'category_name' => 'Tecnología & Gadgets',
-                'is_imported' => false,
-            ],
-            [
-                'dropi_id' => 'DRP-CAT-002',
-                'supplier_id' => $supMedellin->id,
-                'name' => 'Power Bank Solar 20.000 mAh Carga Rápida 22.5W',
-                'slug' => 'power-bank-solar-20000-mah',
-                'sku' => 'DRP-PWR-20K',
-                'short_description' => 'Batería externa impermeable con panel solar, linterna LED doble y 3 puertos USB.',
-                'description' => 'La batería portátil más resistente para viajes y camping. Capacidad real para cargar hasta 5 veces un smartphone de última generación.',
-                'wholesale_price' => 62000.00,
-                'suggested_price' => 110000.00,
-                'stock' => 120,
-                'image' => 'https://images.unsplash.com/photo-1609091839311-d5365f9ff1c5?w=800&auto=format&fit=crop&q=80',
-                'category_name' => 'Tecnología & Gadgets',
-                'is_imported' => false,
-            ],
-            [
-                'dropi_id' => 'DRP-CAT-003',
-                'supplier_id' => $supBogota->id,
-                'name' => 'Micrófono Inalámbrico Solapa Lavalier Tipo C / iPhone',
-                'slug' => 'microfono-inalambrico-solapa-lavalier',
-                'sku' => 'DRP-MIC-LAV',
-                'short_description' => 'Grabación de audio limpia con reducción de ruido inteligente y 20 metros de alcance.',
-                'description' => 'Plug and play, no requiere aplicaciones. Perfecto para entrevistas, directos de Instagram, YouTube y clases virtuales.',
-                'wholesale_price' => 38000.00,
-                'suggested_price' => 69900.00,
-                'stock' => 150,
-                'image' => 'https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=800&auto=format&fit=crop&q=80',
-                'category_name' => 'Audio & Sonido Pro',
-                'is_imported' => false,
-            ],
-            [
-                'dropi_id' => 'DRP-CAT-004',
-                'supplier_id' => $supCali->id,
-                'name' => 'Humidificador Volcán con Efecto Llama y Aromaterapia',
-                'slug' => 'humidificador-volcan-efecto-llama',
-                'sku' => 'DRP-VOLC-01',
-                'short_description' => 'Simulación de fuego relajante con 2 modos de niebla y luz ambiental LED.',
-                'description' => 'Aromatiza y purifica cualquier habitación con aceites esenciales. Diseño exclusivo que genera un espectáculo visual en tu sala o dormitorio.',
-                'wholesale_price' => 55000.00,
-                'suggested_price' => 95000.00,
-                'stock' => 90,
-                'image' => 'https://images.unsplash.com/photo-1608571423902-eed4a5ad8108?w=800&auto=format&fit=crop&q=80',
-                'category_name' => 'Hogar & Decoración',
-                'is_imported' => false,
-            ],
-            [
-                'dropi_id' => 'DRP-CAT-005',
-                'supplier_id' => $supCali->id,
-                'name' => 'Gafas de Sol Estilo Retro Steampunk Polarizadas',
-                'slug' => 'gafas-sol-retro-steampunk-polarizadas',
-                'sku' => 'DRP-SUN-STM',
-                'short_description' => 'Montura metálica redonda con protectores laterales y cristales con filtro UV400.',
-                'description' => 'Un diseño único y vanguardista que resalta en cualquier ocasión. Incluye estuche de cuero protector y paño de microfibra.',
-                'wholesale_price' => 42000.00,
-                'suggested_price' => 85000.00,
-                'stock' => 75,
-                'image' => 'https://images.unsplash.com/photo-1572635196237-14b3f281503f?w=800&auto=format&fit=crop&q=80',
-                'category_name' => 'Relojes & Accesorios',
-                'is_imported' => false,
-            ],
-            [
-                'dropi_id' => 'DRP-CAT-006',
-                'supplier_id' => $supMedellin->id,
-                'name' => 'Mini Proyector Portátil HD 1080P Smart Cinema',
-                'slug' => 'mini-proyector-portatil-hd-1080p',
-                'sku' => 'DRP-PROY-MINI',
-                'short_description' => 'Cine en casa de hasta 100 pulgadas con altavoz integrado y conexión HDMI/USB.',
-                'description' => 'Proyecta películas, series y videojuegos en cualquier pared o techo. Compatible con Chromecast, Fire Stick, consolas y smartphones.',
-                'wholesale_price' => 195000.00,
-                'suggested_price' => 320000.00,
-                'stock' => 40,
-                'image' => 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=800&auto=format&fit=crop&q=80',
-                'category_name' => 'Tecnología & Gadgets',
-                'is_imported' => false,
-            ],
-            [
-                'dropi_id' => 'DRP-CAT-007',
-                'supplier_id' => $supMedellin->id,
-                'name' => 'Smartwatch Ultra AMOLED Titanium Series 9',
-                'slug' => 'smartwatch-ultra-amoled-titanium-series-9',
-                'sku' => 'DRP-WAT-ULT',
-                'short_description' => 'Caja de titanio aeroespacial, pantalla AMOLED Always-On, GPS dual y llamadas bluetooth.',
-                'description' => 'Monitoreo cardíaco 24/7, oxímetro SpO2, sensor de temperatura y más de 120 modos deportivos.',
-                'wholesale_price' => 180000.00,
-                'suggested_price' => 299000.00,
-                'stock' => 60,
-                'image' => 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=800&auto=format&fit=crop&q=80',
-                'category_name' => 'Tecnología & Gadgets',
-                'is_imported' => false,
-            ],
-            [
-                'dropi_id' => 'DRP-CAT-008',
-                'supplier_id' => $supBogota->id,
-                'name' => 'Auriculares Inalámbricos Studio ANC Cancelación de Ruido',
-                'slug' => 'auriculares-inalambricos-studio-anc',
-                'sku' => 'DRP-AUD-ANC',
-                'short_description' => 'Cancelación activa de ruido híbrida, audio espacial 3D y 40 horas de batería.',
-                'description' => 'Transductores de neodimio de 40mm para bajos profundos y agudos precisos.',
-                'wholesale_price' => 120000.00,
-                'suggested_price' => 199900.00,
-                'stock' => 50,
-                'image' => 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=800&auto=format&fit=crop&q=80',
-                'category_name' => 'Audio & Sonido Pro',
-                'is_imported' => false,
-            ],
-        ];
+                    $name = $item['name'] ?? $item['title'];
+                    $wholesale = (float) ($item['price'] ?? ($item['wholesale_price'] ?? ($item['cost'] ?? 0)));
+                    $suggested = (float) ($item['suggested_price'] ?? ($item['sale_price'] ?? ($wholesale * 1.4)));
+                    $image = $item['image'] ?? ($item['images'][0]['src'] ?? ($item['photo'] ?? null));
 
-        foreach ($catalog as $item) {
-            SupplierProduct::firstOrCreate(['sku' => $item['sku']], $item);
+                    SupplierProduct::updateOrCreate(
+                        ['dropi_id' => (string) ($item['id'] ?? Str::slug($name))],
+                        [
+                            'name' => $name,
+                            'slug' => Str::slug($name) . '-' . Str::random(4),
+                            'sku' => (string) ($item['sku'] ?? ('DRP-' . ($item['id'] ?? strtoupper(Str::random(6))))),
+                            'short_description' => $item['short_description'] ?? null,
+                            'description' => $item['description'] ?? null,
+                            'wholesale_price' => $wholesale,
+                            'suggested_price' => $suggested,
+                            'stock' => (int) ($item['stock'] ?? ($item['quantity'] ?? 50)),
+                            'image' => $image,
+                            'images' => !empty($item['images']) && is_array($item['images']) ? $item['images'] : ($image ? [$image] : []),
+                            'category_name' => $item['category_name'] ?? ($item['category']['name'] ?? 'General'),
+                        ]
+                    );
+                    $synced++;
+                }
+
+                $this->settings->update(['last_sync_at' => now()]);
+
+                return [
+                    'success' => true,
+                    'message' => "Se sincronizaron {$synced} productos reales desde la API de Dropi.",
+                    'synced' => $synced,
+                ];
+            }
+
+            return [
+                'success' => false,
+                'message' => 'Dropi API respondió con código: ' . $response->status(),
+                'synced' => 0,
+            ];
+        } catch (\Exception $e) {
+            Log::error('Error conectando con Dropi API: ' . $e->getMessage());
+            return [
+                'success' => false,
+                'message' => 'Error al conectar con la API de Dropi: ' . $e->getMessage(),
+                'synced' => 0,
+            ];
         }
     }
 

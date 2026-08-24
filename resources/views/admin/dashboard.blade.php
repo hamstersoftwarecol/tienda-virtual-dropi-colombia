@@ -16,54 +16,15 @@
                     <i class="bi bi-shield-check"></i> Token JWT Activo
                 </span>
             </div>
-            <h4 class="fw-bold mb-1">Importar Catálogo Completo de Dropi</h4>
+            <h4 class="fw-bold mb-1">Importar Productos Reales de Dropi</h4>
             <p class="mb-0 text-white-50 small">
-                Sincroniza todos los productos ganadores de bodegas nacionales en Bogotá, Medellín y Cali con tu margen de ganancia calculado en COP.
+                Importa individualmente tus productos de Dropi con nombre, imágenes, costo mayorista, precio de venta en COP, cantidad, descripción y categoría.
             </p>
         </div>
         <div class="d-flex align-items-center gap-2 flex-shrink-0">
-            <button type="button" class="btn btn-warning btn-lg rounded-pill px-4 fw-bold shadow-sm d-flex align-items-center gap-2" data-bs-toggle="modal" data-bs-target="#importAllDropiModal">
-                <i class="bi bi-cloud-arrow-down-fill fs-5"></i> Importar Todos los Productos
-            </button>
-            <a href="{{ route('admin.dropi.catalog') }}" class="btn btn-outline-light btn-lg rounded-pill px-3">
-                Ver Catálogo
+            <a href="{{ route('admin.dropi.catalog') }}" class="btn btn-warning btn-lg rounded-pill px-4 fw-bold shadow-sm d-flex align-items-center gap-2">
+                <i class="bi bi-plus-circle-fill"></i> Importar Producto Dropi
             </a>
-        </div>
-    </div>
-</div>
-
-<!-- Modal Importar Todo Dropi -->
-<div class="modal fade" id="importAllDropiModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 rounded-4 shadow">
-            <div class="modal-header border-0 pb-0">
-                <h5 class="modal-title fw-bold text-dark d-flex align-items-center gap-2">
-                    <i class="bi bi-cloud-arrow-down-fill text-primary"></i> Importar Todo el Catálogo Dropi
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <form action="{{ route('admin.dropi.catalog.import_all') }}" method="POST">
-                @csrf
-                <div class="modal-body py-4">
-                    <p class="text-muted small mb-3">
-                        Se importarán todos los productos disponibles de Dropi a tu tienda virtual. Puedes personalizar el margen de ganancia porcentual que se sumará al precio mayorista.
-                    </p>
-                    <div class="mb-3">
-                        <label class="form-label fw-bold small">Margen de Ganancia Global (%)</label>
-                        <div class="input-group">
-                            <input type="number" name="markup_percent" class="form-control rounded-start-3" value="40" min="1" max="500" required>
-                            <span class="input-group-text rounded-end-3 bg-light fw-bold">% sobre costo</span>
-                        </div>
-                        <div class="form-text small text-muted">Ejemplo: Con 40%, un producto de $50.000 COP se publicará a $70.000 COP.</div>
-                    </div>
-                </div>
-                <div class="modal-footer border-0 pt-0">
-                    <button type="button" class="btn btn-light rounded-pill px-3" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-primary rounded-pill px-4 fw-bold">
-                        <i class="bi bi-cloud-arrow-down-fill me-1"></i> Iniciar Importación Completa
-                    </button>
-                </div>
-            </form>
         </div>
     </div>
 </div>

@@ -99,6 +99,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
 
     // Dropi Catalog Importer & Dropi Orders
     Route::get('/dropi/catalog', [AdminDropiCatalogController::class, 'index'])->name('dropi.catalog');
+    Route::post('/dropi/catalog/sync-api', [AdminDropiCatalogController::class, 'syncApi'])->name('dropi.catalog.sync_api');
     Route::post('/dropi/catalog/import/{id}', [AdminDropiCatalogController::class, 'import'])->name('dropi.catalog.import');
     Route::post('/dropi/catalog/import-custom', [AdminDropiCatalogController::class, 'importCustom'])->name('dropi.catalog.import_custom');
     Route::post('/dropi/catalog/bulk-import', [AdminDropiCatalogController::class, 'bulkImport'])->name('dropi.catalog.bulk');

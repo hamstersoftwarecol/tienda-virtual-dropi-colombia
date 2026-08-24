@@ -21,8 +21,6 @@ class DropiCatalogController extends Controller
 
     public function index(Request $request)
     {
-        $this->dropiService->ensureCatalogPopulated();
-
         $filters = $request->only(['q', 'supplier_id', 'category', 'is_imported', 'min_price', 'max_price', 'sort']);
         $supplierProducts = $this->dropiService->searchSupplierProducts($filters);
         $suppliers = Supplier::where('is_active', true)->get();
@@ -30,6 +28,17 @@ class DropiCatalogController extends Controller
         $settings = DropiSetting::getSettings();
 
         return view('admin.dropi.catalog', compact('supplierProducts', 'suppliers', 'categories', 'settings'));
+    }
+
+    public function syncApi(Request $request)
+    {
+        $result = $this->dropiService->syncFromDropiApi();
+
+        if ($result['success']) {
+            return back()->with('success', $result['message']);
+        }
+
+        return back()->with('warning', $result['message']);
     }
 
     public function import(Request $request, int $id)
