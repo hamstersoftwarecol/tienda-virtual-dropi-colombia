@@ -11,6 +11,25 @@ class SupplierController extends Controller
 {
     public function index(Request $request)
     {
+        if (Supplier::count() === 0) {
+            Supplier::firstOrCreate(
+                ['slug' => 'bodega-proveedor-dropi-441247'],
+                [
+                    'name' => 'Bodega Proveedor Dropi #441247',
+                    'city' => 'Bogotá / Medellín',
+                    'department' => 'Colombia',
+                    'phone' => '+57 310 000 0000',
+                    'email' => 'contacto@dropi.co',
+                    'warehouse_address' => 'Bodega Oficial Dropi Colombia (ID: 441247)',
+                    'description' => 'Bodega nacional vinculada a tu cuenta de Dropi mediante API de proveedor (user_id: 441247).',
+                    'logo' => 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=300',
+                    'rating' => 5.0,
+                    'is_verified' => true,
+                    'is_active' => true,
+                ]
+            );
+        }
+
         $query = Supplier::withCount('catalogProducts', 'products');
 
         if ($request->has('q') && $request->q != '') {
