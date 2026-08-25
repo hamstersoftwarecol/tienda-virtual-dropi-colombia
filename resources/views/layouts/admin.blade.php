@@ -90,7 +90,7 @@
         </aside>
 
         <!-- Main Wrapper -->
-        <div class="flex-grow-1 d-flex flex-column bg-light">
+        <div class="admin-main-wrapper flex-grow-1 d-flex flex-column bg-light">
             <!-- Admin Topbar -->
             <header class="bg-white border-bottom py-3 px-4 d-flex justify-content-between align-items-center shadow-sm">
                 <!-- Mobile Toggle -->

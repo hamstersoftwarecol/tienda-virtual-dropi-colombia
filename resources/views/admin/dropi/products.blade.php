@@ -4,228 +4,223 @@
 @section('page_header', 'Catálogo de Productos Dropi Colombia')
 
 @section('content')
-<!-- Header Card with Stats & Actions -->
-<div class="card border-0 shadow-sm rounded-4 bg-white p-4 mb-4">
-    <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3">
-        <div>
-            <div class="d-flex align-items-center gap-2 mb-2">
-                <span class="badge bg-primary text-white rounded-pill px-3 py-1 fw-bold">
-                    <i class="bi bi-cloud-arrow-down-fill me-1"></i> API Dropi Colombia
-                </span>
-                @if($dropiToken && $dropiToken->is_valid)
-                    <span class="badge bg-success-subtle text-success border border-success border-opacity-25 rounded-pill px-3 py-1">
-                        <i class="bi bi-patch-check-fill me-1"></i> Token Activo ({{ $dropiToken->store }})
+<div class="container-fluid px-0">
+    <!-- Top Action Card -->
+    <div class="card border-0 shadow-sm rounded-4 bg-white p-4 mb-4">
+        <div class="row align-items-center g-3">
+            <div class="col-lg-7">
+                <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+                    <span class="badge bg-primary text-white rounded-pill px-3 py-1 fw-bold">
+                        <i class="bi bi-cloud-arrow-down-fill me-1"></i> API Dropi Colombia
                     </span>
-                @else
-                    <span class="badge bg-warning-subtle text-warning border border-warning border-opacity-25 rounded-pill px-3 py-1">
-                        <i class="bi bi-exclamation-triangle-fill me-1"></i> Token no configurado o no validado
-                    </span>
-                @endif
-
-                @if(count($dropiProducts) > 0)
-                    <span class="badge bg-light text-dark border rounded-pill px-3 py-1">
-                        {{ $importedCount }} de {{ count($dropiProducts) }} importados a tu tienda
-                    </span>
-                @endif
-            </div>
-            <h4 class="fw-bold mb-1 text-dark">Catálogo en Vivo de Dropi</h4>
-            <p class="text-muted small mb-0">
-                Productos sincronizados directamente desde la API oficial de Dropi.co para importación en un solo clic.
-            </p>
-        </div>
-
-        <div class="d-flex align-items-center gap-2 flex-shrink-0">
-            @if(count($dropiProducts) > 0)
-                <form action="{{ route('admin.dropi.products.import_all') }}" method="POST" onsubmit="return confirm('¿Importar todos los productos obtenidos de la API de Dropi a tu tienda?');">
-                    @csrf
-                    <button type="submit" class="btn btn-warning text-dark fw-bold rounded-pill px-4 shadow-sm">
-                        <i class="bi bi-cloud-arrow-down-fill me-1"></i> ⚡ Importar Todo (1-Clic)
-                    </button>
-                </form>
-            @endif
-            <a href="{{ route('admin.dropi.settings') }}" class="btn btn-light rounded-pill px-3 border">
-                <i class="bi bi-gear-wide-connected text-primary me-1"></i> Configurar Token
-            </a>
-            <a href="{{ route('admin.products.index') }}" class="btn btn-outline-secondary rounded-pill px-3">
-                <i class="bi bi-box-seam me-1"></i> Ver Mis Productos
-            </a>
-        </div>
-    </div>
-</div>
-
-<!-- Filters & Search Bar -->
-<div class="card border-0 shadow-sm rounded-4 bg-white p-3 mb-4">
-    <div class="row g-3 align-items-center">
-        <!-- Search Input -->
-        <div class="col-lg-8">
-            <form action="{{ route('admin.dropi.products.index') }}" method="GET" class="d-flex gap-2">
-                <div class="input-group flex-grow-1">
-                    <span class="input-group-text bg-light border-end-0 rounded-start-pill ps-3">
-                        <i class="bi bi-search text-muted"></i>
-                    </span>
-                    <input type="text" name="search" class="form-control bg-light border-start-0 rounded-end-pill" 
-                           placeholder="Buscar en Dropi por nombre, palabra clave o ID (ej: waflera, reloj, audifonos, 2239206)..." value="{{ $search }}">
-                </div>
-                <button type="submit" class="btn btn-primary rounded-pill px-4 fw-bold flex-shrink-0">
-                    <i class="bi bi-search me-1"></i> Buscar
-                </button>
-                @if($search)
-                    <a href="{{ route('admin.dropi.products.index') }}" class="btn btn-light border rounded-pill px-3 flex-shrink-0" title="Limpiar búsqueda">
-                        <i class="bi bi-x-lg"></i>
-                    </a>
-                @endif
-            </form>
-        </div>
-
-        <div class="col-lg-4 text-lg-end">
-            <a href="{{ route('admin.dropi.products.index') }}" class="btn btn-outline-secondary rounded-pill px-3 btn-sm">
-                <i class="bi bi-arrow-clockwise me-1"></i> Recargar Catálogo
-            </a>
-        </div>
-    </div>
-
-    <!-- Quick Search Badges -->
-    <div class="d-flex flex-wrap align-items-center gap-1 mt-2 pt-2 border-top small">
-        <span class="text-muted me-1"><i class="bi bi-lightning-charge-fill text-warning"></i> Búsquedas populares:</span>
-        <a href="{{ route('admin.dropi.products.index', ['search' => 'waflera']) }}" class="badge bg-light text-dark border text-decoration-none rounded-pill px-2 py-1">waflera</a>
-        <a href="{{ route('admin.dropi.products.index', ['search' => 'reloj']) }}" class="badge bg-light text-dark border text-decoration-none rounded-pill px-2 py-1">reloj</a>
-        <a href="{{ route('admin.dropi.products.index', ['search' => 'audifonos']) }}" class="badge bg-light text-dark border text-decoration-none rounded-pill px-2 py-1">audífonos</a>
-        <a href="{{ route('admin.dropi.products.index', ['search' => 'licuadora']) }}" class="badge bg-light text-dark border text-decoration-none rounded-pill px-2 py-1">licuadora</a>
-        <a href="{{ route('admin.dropi.products.index', ['search' => 'sierra']) }}" class="badge bg-light text-dark border text-decoration-none rounded-pill px-2 py-1">sierra</a>
-        <a href="{{ route('admin.dropi.products.index', ['search' => 'tripode']) }}" class="badge bg-light text-dark border text-decoration-none rounded-pill px-2 py-1">trípode</a>
-        <a href="{{ route('admin.dropi.products.index', ['search' => 'consola']) }}" class="badge bg-light text-dark border text-decoration-none rounded-pill px-2 py-1">consola</a>
-    </div>
-</div>
-
-<!-- Alert status if API response message or empty search -->
-@if(count($dropiProducts) === 0)
-    <div class="card border-0 shadow-sm rounded-4 p-5 text-center mb-4 bg-white">
-        <div class="mx-auto mb-3" style="width: 80px; height: 80px; background: rgba(37, 99, 235, 0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
-            <i class="bi bi-search text-primary fs-1"></i>
-        </div>
-        @if(!empty($search))
-            <h5 class="fw-bold text-dark mb-1">Sin resultados para "{{ $search }}"</h5>
-            <p class="text-muted small mb-3">No encontramos productos en la API de Dropi con ese criterio. Prueba con un término más general.</p>
-            <div class="d-flex justify-content-center gap-2">
-                <a href="{{ route('admin.dropi.products.index') }}" class="btn btn-primary rounded-pill px-4 btn-sm fw-bold">
-                    <i class="bi bi-arrow-clockwise me-1"></i> Ver Catálogo Completo
-                </a>
-            </div>
-        @else
-            <h5 class="fw-bold text-dark mb-1">Sincronización con Dropi API</h5>
-            <p class="text-muted small mb-3">{{ $apiMessage ?: 'No se pudieron cargar productos en este momento.' }}</p>
-            <div class="d-flex justify-content-center gap-2">
-                <a href="{{ route('admin.dropi.settings') }}" class="btn btn-primary rounded-pill px-4 btn-sm fw-bold">
-                    <i class="bi bi-gear-fill me-1"></i> Configurar Token Dropi
-                </a>
-                <a href="{{ route('admin.dropi.products.index') }}" class="btn btn-outline-secondary rounded-pill px-4 btn-sm">
-                    <i class="bi bi-arrow-repeat me-1"></i> Reintentar
-                </a>
-            </div>
-        @endif
-    </div>
-@endif
-
-<!-- Products Grid (Direct Live API Products) -->
-<div class="row g-4 mb-4">
-    @forelse($dropiProducts as $prod)
-        @php
-            $isImported = in_array((string)$prod['id'], $importedDropiIds);
-            $wholesale = (float) $prod['wholesale_price'];
-            $suggested = (float) $prod['suggested_price'];
-            $profit = max(0, $suggested - $wholesale);
-            $profitPercent = $wholesale > 0 ? round(($profit / $wholesale) * 100) : 0;
-        @endphp
-        <div class="col-sm-6 col-lg-4 col-xl-3">
-            <div class="card h-100 border-0 shadow-sm rounded-4 overflow-hidden bg-white d-flex flex-column transition-all hover-shadow {{ $isImported ? 'border-success border-2' : '' }}">
-                <!-- Product Image & Badges -->
-                <div class="position-relative bg-light text-center p-3" style="height: 200px;">
-                    <img src="{{ $prod['image'] }}" alt="{{ $prod['name'] }}" class="h-100 w-100 object-fit-contain transition-transform">
-                    
-                    <span class="position-absolute top-0 start-0 m-2 badge bg-dark bg-opacity-75 rounded-pill small font-monospace">
-                        ID #{{ $prod['id'] }}
-                    </span>
-
-                    @if($isImported)
-                        <span class="position-absolute top-0 end-0 m-2 badge bg-success text-white rounded-pill px-2 py-1 shadow-sm">
-                            <i class="bi bi-check-circle-fill me-1"></i> En Tu Tienda
+                    @if($dropiToken && $dropiToken->is_valid)
+                        <span class="badge bg-success-subtle text-success border border-success border-opacity-25 rounded-pill px-3 py-1">
+                            <i class="bi bi-patch-check-fill me-1"></i> Token Activo ({{ $dropiToken->store }})
                         </span>
                     @else
-                        <span class="position-absolute top-0 end-0 m-2 badge bg-primary-subtle text-primary border border-primary border-opacity-25 rounded-pill px-2 py-1 small">
-                            {{ $prod['category'] ?? 'General' }}
+                        <span class="badge bg-warning-subtle text-warning border border-warning border-opacity-25 rounded-pill px-3 py-1">
+                            <i class="bi bi-exclamation-triangle-fill me-1"></i> Token no validado
+                        </span>
+                    @endif
+
+                    @if(count($dropiProducts) > 0)
+                        <span class="badge bg-light text-secondary border rounded-pill px-3 py-1">
+                            <strong>{{ count($dropiProducts) }}</strong> productos en vivo
                         </span>
                     @endif
                 </div>
+                <h4 class="fw-bold mb-1 text-dark">Catálogo en Vivo de Dropi</h4>
+                <p class="text-muted small mb-0">
+                    Sincronización en tiempo real desde la API de Dropi.co para importación directa en un solo clic.
+                </p>
+            </div>
 
-                <!-- Product Content -->
-                <div class="card-body p-3 d-flex flex-column flex-grow-1">
-                    <h6 class="fw-bold text-dark mb-2 text-truncate-2" style="font-size: 0.95rem; min-height: 2.7rem;" title="{{ $prod['name'] }}">
-                        {{ $prod['name'] }}
-                    </h6>
-
-                    <!-- Price & Profit Box -->
-                    <div class="bg-light p-2 rounded-3 mb-3 small">
-                        <div class="d-flex justify-content-between align-items-center mb-1">
-                            <span class="text-muted">Costo Dropi:</span>
-                            <strong class="text-secondary">{{ format_cop($wholesale) }}</strong>
-                        </div>
-                        <div class="d-flex justify-content-between align-items-center mb-1">
-                            <span class="text-muted">Precio de Venta:</span>
-                            <strong class="text-dark fs-6">{{ format_cop($suggested) }}</strong>
-                        </div>
-                        <div class="d-flex justify-content-between align-items-center pt-1 border-top">
-                            <span class="text-success fw-bold">Tu Ganancia:</span>
-                            <span class="badge bg-success text-white rounded-pill px-2 py-1 font-monospace">
-                                +{{ format_cop($profit) }} ({{ $profitPercent }}%)
-                            </span>
-                        </div>
-                    </div>
-
-                    <!-- Direct 1-Click Import Actions -->
-                    <div class="mt-auto d-flex flex-column gap-2">
-                        @if($isImported)
-                            <div class="d-flex gap-2">
-                                <span class="btn btn-outline-success w-100 rounded-pill btn-sm fw-bold disabled">
-                                    <i class="bi bi-check2-circle me-1"></i> Ya Importado
-                                </span>
-                                <button type="button" class="btn btn-light border rounded-circle btn-sm" title="Ajustar precio"
-                                        onclick="openPriceCustomizer('{{ $prod['id'] }}', '{{ addslashes($prod['name']) }}', '{{ $wholesale }}', '{{ $suggested }}', '{{ $prod['image'] }}')">
-                                    <i class="bi bi-pencil"></i>
-                                </button>
-                            </div>
-                        @else
-                            <form action="{{ route('admin.dropi.products.import') }}" method="POST" class="w-100">
-                                @csrf
-                                <input type="hidden" name="dropi_id" value="{{ $prod['id'] }}">
-                                <button type="submit" class="btn btn-primary w-100 rounded-pill fw-bold shadow-sm btn-sm py-2">
-                                    <i class="bi bi-cloud-arrow-down-fill me-1"></i> Importar Producto
-                                </button>
-                            </form>
-                            
-                            <button type="button" class="btn btn-link btn-sm text-decoration-none text-muted p-0 text-center"
-                                    onclick="openPriceCustomizer('{{ $prod['id'] }}', '{{ addslashes($prod['name']) }}', '{{ $wholesale }}', '{{ $suggested }}', '{{ $prod['image'] }}')">
-                                <small><i class="bi bi-sliders me-1"></i>Personalizar precio antes de importar</small>
+            <div class="col-lg-5 text-lg-end">
+                <div class="d-flex flex-wrap justify-content-lg-end align-items-center gap-2">
+                    @if(count($dropiProducts) > 0)
+                        <form action="{{ route('admin.dropi.products.import_all') }}" method="POST" onsubmit="return confirm('¿Importar todos los productos obtenidos de la API de Dropi a tu tienda?');" class="d-inline">
+                            @csrf
+                            <button type="submit" class="btn btn-warning text-dark fw-bold rounded-pill px-3 py-2 shadow-sm btn-sm">
+                                <i class="bi bi-cloud-arrow-down-fill me-1"></i> ⚡ Importar Todo
                             </button>
-                        @endif
-                    </div>
+                        </form>
+                    @endif
+                    <a href="{{ route('admin.dropi.settings') }}" class="btn btn-light rounded-pill px-3 py-2 border btn-sm">
+                        <i class="bi bi-gear-wide-connected text-primary me-1"></i> Token Dropi
+                    </a>
+                    <a href="{{ route('admin.products.index') }}" class="btn btn-outline-primary rounded-pill px-3 py-2 btn-sm">
+                        <i class="bi bi-box-seam me-1"></i> Mis Productos
+                    </a>
                 </div>
             </div>
         </div>
-    @empty
-        @if(empty($apiMessage))
-            <div class="col-12 text-center py-5">
-                <i class="bi bi-box-seam fs-1 text-muted d-block mb-3"></i>
-                <h5 class="fw-bold text-dark">No se encontraron productos en la API de Dropi</h5>
-                <p class="text-muted small">Verifica tu búsqueda o actualiza el catálogo.</p>
-                <a href="{{ route('admin.dropi.products.index') }}" class="btn btn-primary rounded-pill px-4 mt-2">
-                    Recargar Catálogo
+    </div>
+
+    <!-- Search Bar & Filters -->
+    <div class="card border-0 shadow-sm rounded-4 bg-white p-3 mb-4">
+        <div class="row g-3 align-items-center">
+            <!-- Search Input -->
+            <div class="col-lg-8">
+                <form action="{{ route('admin.dropi.products.index') }}" method="GET" class="d-flex gap-2">
+                    <div class="input-group flex-grow-1">
+                        <span class="input-group-text bg-light border-end-0 rounded-start-pill ps-3">
+                            <i class="bi bi-search text-muted"></i>
+                        </span>
+                        <input type="text" name="search" class="form-control bg-light border-start-0 rounded-end-pill" 
+                               placeholder="Buscar en Dropi por nombre, palabra clave o ID (ej: waflera, reloj, audifonos, 2239206)..." value="{{ $search }}">
+                    </div>
+                    <button type="submit" class="btn btn-primary rounded-pill px-4 fw-bold flex-shrink-0">
+                        <i class="bi bi-search me-1"></i> Buscar
+                    </button>
+                    @if($search)
+                        <a href="{{ route('admin.dropi.products.index') }}" class="btn btn-light border rounded-pill px-3 flex-shrink-0" title="Limpiar búsqueda">
+                            <i class="bi bi-x-lg"></i>
+                        </a>
+                    @endif
+                </form>
+            </div>
+
+            <div class="col-lg-4 text-lg-end">
+                <a href="{{ route('admin.dropi.products.index') }}" class="btn btn-outline-secondary rounded-pill px-3 btn-sm">
+                    <i class="bi bi-arrow-clockwise me-1"></i> Recargar Catálogo
                 </a>
             </div>
-        @endif
-    @endforelse
+        </div>
+
+        <!-- Quick Search Badges -->
+        <div class="d-flex flex-wrap align-items-center gap-1 mt-3 pt-2 border-top small">
+            <span class="text-muted me-1"><i class="bi bi-lightning-charge-fill text-warning"></i> Búsquedas populares:</span>
+            <a href="{{ route('admin.dropi.products.index', ['search' => 'waflera']) }}" class="badge bg-light text-dark border text-decoration-none rounded-pill px-2.5 py-1">waflera</a>
+            <a href="{{ route('admin.dropi.products.index', ['search' => 'reloj']) }}" class="badge bg-light text-dark border text-decoration-none rounded-pill px-2.5 py-1">reloj</a>
+            <a href="{{ route('admin.dropi.products.index', ['search' => 'audifonos']) }}" class="badge bg-light text-dark border text-decoration-none rounded-pill px-2.5 py-1">audífonos</a>
+            <a href="{{ route('admin.dropi.products.index', ['search' => 'licuadora']) }}" class="badge bg-light text-dark border text-decoration-none rounded-pill px-2.5 py-1">licuadora</a>
+            <a href="{{ route('admin.dropi.products.index', ['search' => 'sierra']) }}" class="badge bg-light text-dark border text-decoration-none rounded-pill px-2.5 py-1">sierra</a>
+            <a href="{{ route('admin.dropi.products.index', ['search' => 'tripode']) }}" class="badge bg-light text-dark border text-decoration-none rounded-pill px-2.5 py-1">trípode</a>
+            <a href="{{ route('admin.dropi.products.index', ['search' => 'consola']) }}" class="badge bg-light text-dark border text-decoration-none rounded-pill px-2.5 py-1">consola</a>
+        </div>
+    </div>
+
+    <!-- Empty State -->
+    @if(count($dropiProducts) === 0)
+        <div class="card border-0 shadow-sm rounded-4 p-5 text-center mb-4 bg-white">
+            <div class="mx-auto mb-3" style="width: 72px; height: 72px; background: rgba(79, 70, 229, 0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                <i class="bi bi-search text-primary fs-2"></i>
+            </div>
+            @if(!empty($search))
+                <h5 class="fw-bold text-dark mb-1">Sin resultados para "{{ $search }}"</h5>
+                <p class="text-muted small mb-3">No encontramos productos en la API de Dropi con ese criterio. Prueba con un término más general.</p>
+                <div class="d-flex justify-content-center gap-2">
+                    <a href="{{ route('admin.dropi.products.index') }}" class="btn btn-primary rounded-pill px-4 btn-sm fw-bold">
+                        <i class="bi bi-arrow-clockwise me-1"></i> Ver Catálogo Completo
+                    </a>
+                </div>
+            @else
+                <h5 class="fw-bold text-dark mb-1">Sincronización con Dropi API</h5>
+                <p class="text-muted small mb-3">{{ $apiMessage ?: 'No se pudieron cargar productos en este momento.' }}</p>
+                <div class="d-flex justify-content-center gap-2">
+                    <a href="{{ route('admin.dropi.settings') }}" class="btn btn-primary rounded-pill px-4 btn-sm fw-bold">
+                        <i class="bi bi-gear-fill me-1"></i> Configurar Token Dropi
+                    </a>
+                    <a href="{{ route('admin.dropi.products.index') }}" class="btn btn-outline-secondary rounded-pill px-4 btn-sm">
+                        <i class="bi bi-arrow-repeat me-1"></i> Reintentar
+                    </a>
+                </div>
+            @endif
+        </div>
+    @endif
+
+    <!-- Products Grid (Pixel-Perfect Clean & Uniform Cards) -->
+    <div class="row g-3 g-xl-4 mb-4">
+        @foreach($dropiProducts as $prod)
+            @php
+                $isImported = in_array((string)$prod['id'], $importedDropiIds);
+                $wholesale = (float) $prod['wholesale_price'];
+                $suggested = (float) $prod['suggested_price'];
+                $profit = max(0, $suggested - $wholesale);
+                $profitPercent = $wholesale > 0 ? round(($profit / $wholesale) * 100) : 0;
+            @endphp
+            <div class="col-12 col-sm-6 col-lg-4 col-xl-3">
+                <div class="dropi-card {{ $isImported ? 'border-success' : '' }}">
+                    <!-- Product Image Container -->
+                    <div class="dropi-img-box">
+                        <img src="{{ $prod['image'] }}" alt="{{ $prod['name'] }}" loading="lazy">
+                        
+                        <!-- Top Badges -->
+                        <span class="position-absolute top-0 start-0 m-2 badge bg-dark bg-opacity-75 text-white rounded-pill px-2 py-1 small font-monospace" style="font-size: 0.7rem;">
+                            ID #{{ $prod['id'] }}
+                        </span>
+
+                        @if($isImported)
+                            <span class="position-absolute top-0 end-0 m-2 badge bg-success text-white rounded-pill px-2.5 py-1 shadow-sm small" style="font-size: 0.72rem;">
+                                <i class="bi bi-check-circle-fill me-1"></i> En Tu Tienda
+                            </span>
+                        @else
+                            <span class="position-absolute top-0 end-0 m-2 badge bg-primary-subtle text-primary border border-primary border-opacity-25 rounded-pill px-2 py-1 small" style="font-size: 0.72rem;">
+                                {{ $prod['category'] ?? 'General' }}
+                            </span>
+                        @endif
+                    </div>
+
+                    <!-- Product Content -->
+                    <div class="p-3 d-flex flex-column flex-grow-1">
+                        <!-- Product Title -->
+                        <h6 class="fw-bold text-dark mb-2 text-truncate-2" style="font-size: 0.9rem; line-height: 1.35; min-height: 2.45rem;" title="{{ $prod['name'] }}">
+                            {{ $prod['name'] }}
+                        </h6>
+
+                        <!-- Price Breakdown Box -->
+                        <div class="bg-light p-2.5 rounded-3 mb-3 small border border-light-subtle">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span class="text-muted" style="font-size: 0.78rem;">Costo Dropi:</span>
+                                <strong class="text-secondary font-monospace" style="font-size: 0.85rem;">{{ format_cop($wholesale) }}</strong>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span class="text-muted" style="font-size: 0.78rem;">Precio Venta:</span>
+                                <strong class="text-dark font-monospace" style="font-size: 0.92rem;">{{ format_cop($suggested) }}</strong>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center pt-1 mt-1 border-top">
+                                <span class="text-success fw-bold" style="font-size: 0.78rem;">Tu Ganancia:</span>
+                                <span class="badge bg-success-subtle text-success border border-success border-opacity-25 rounded-pill px-2 py-1 font-monospace fw-bold" style="font-size: 0.75rem;">
+                                    +{{ format_cop($profit) }} ({{ $profitPercent }}%)
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="mt-auto d-flex flex-column gap-1.5">
+                            @if($isImported)
+                                <div class="d-flex gap-2">
+                                    <button type="button" class="btn btn-outline-success w-100 rounded-pill btn-sm fw-bold disabled py-1.5" style="font-size: 0.82rem;">
+                                        <i class="bi bi-check2-circle me-1"></i> Ya Importado
+                                    </button>
+                                    <button type="button" class="btn btn-light border rounded-circle btn-sm flex-shrink-0" title="Ajustar precio" style="width: 32px; height: 32px;"
+                                            onclick="openPriceCustomizer('{{ $prod['id'] }}', '{{ addslashes($prod['name']) }}', '{{ $wholesale }}', '{{ $suggested }}', '{{ $prod['image'] }}')">
+                                        <i class="bi bi-pencil-fill text-secondary"></i>
+                                    </button>
+                                </div>
+                            @else
+                                <form action="{{ route('admin.dropi.products.import') }}" method="POST" class="w-100 mb-1">
+                                    @csrf
+                                    <input type="hidden" name="dropi_id" value="{{ $prod['id'] }}">
+                                    <button type="submit" class="btn btn-primary w-100 rounded-pill fw-bold shadow-sm btn-sm py-1.5" style="font-size: 0.85rem;">
+                                        <i class="bi bi-cloud-arrow-down-fill me-1"></i> Importar Producto
+                                    </button>
+                                </form>
+                                
+                                <button type="button" class="btn btn-link btn-sm text-decoration-none text-muted p-0 text-center" style="font-size: 0.75rem;"
+                                        onclick="openPriceCustomizer('{{ $prod['id'] }}', '{{ addslashes($prod['name']) }}', '{{ $wholesale }}', '{{ $suggested }}', '{{ $prod['image'] }}')">
+                                    <i class="bi bi-sliders me-1"></i>Personalizar precio
+                                </button>
+                            @endif
+                        </div>
+                    </div>
+                </div>
+            </div>
+        @endforeach
+    </div>
 </div>
 
-<!-- Modal Opcional: Personalizar Precio antes de importar -->
+<!-- Modal: Personalizar Precio antes de importar -->
 <div class="modal fade" id="priceCustomizerModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content rounded-4 border-0 shadow">
