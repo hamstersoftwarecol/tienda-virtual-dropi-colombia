@@ -450,11 +450,15 @@ class DropiApiService
      * Query buyer details / history from Dropi API in real-time
      * Endpoint: https://api-v2.dropi.co/bff/customers/fingerprint/v2?country_code=CO&user_id={user_id}&phone={phone}&months=0
      */
-    public function getBuyerDetails(string $phone): ?array
+    public function getBuyerDetails(string $phone): array
     {
         $tokenRecord = $this->getActiveToken();
         if (!$tokenRecord || empty($tokenRecord->token)) {
-            return null;
+            return [
+                'success' => false,
+                'has_history' => false,
+                'message' => 'No tienes un Token JWT de Dropi configurado. Por favor ve a "Configuración Dropi" y guarda tu token.',
+            ];
         }
 
         $token = trim($tokenRecord->token);
@@ -475,9 +479,14 @@ class DropiApiService
         $months = 0;
 
         // 1. Official Dropi API v2 BFF Fingerprint Endpoint
-        $bffUrl = "https://api-v2.dropi.co/bff/customers/fingerprint/v2";
+        $bffUrls = [
+            "https://api-v2.dropi.co/bff/customers/fingerprint/v2",
+            "https://api.dropi.co/bff/customers/fingerprint/v2",
+        ];
+
         $headers = [
             'Authorization' => 'Bearer ' . $token,
+            'token' => $token,
             'dropi-integration-key' => $token,
             'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36',
             'Origin' => 'https://app.dropi.co',
@@ -486,30 +495,47 @@ class DropiApiService
             'Content-Type' => 'application/json',
         ];
 
-        try {
-            $response = Http::withHeaders($headers)
-                ->timeout(15)
-                ->connectTimeout(5)
-                ->get($bffUrl, [
-                    'country_code' => $countryCode,
-                    'user_id' => $userId,
-                    'phone' => $nationalPhone,
-                    'months' => $months,
-                ]);
+        $phoneVariations = [$nationalPhone, '57' . $nationalPhone];
 
-            if ($response->successful()) {
-                $json = $response->json();
-                if (!empty($json)) {
-                    $parsed = $this->parseDropiBffFingerprint($json, $nationalPhone);
-                    if ($parsed !== null) {
-                        return $parsed;
+        foreach ($bffUrls as $bffUrl) {
+            foreach ($phoneVariations as $pVar) {
+                try {
+                    $response = Http::withHeaders($headers)
+                        ->timeout(15)
+                        ->connectTimeout(5)
+                        ->get($bffUrl, [
+                            'country_code' => $countryCode,
+                            'user_id' => $userId,
+                            'phone' => $pVar,
+                            'months' => $months,
+                        ]);
+
+                    Log::info("Dropi BFF Fingerprint [URL={$bffUrl}, phone={$pVar}] status={$response->status()} body=" . substr($response->body(), 0, 300));
+
+                    if ($response->successful()) {
+                        $json = $response->json();
+                        if (!empty($json)) {
+                            $parsed = $this->parseDropiBffFingerprint($json, $nationalPhone);
+                            if ($parsed !== null) {
+                                $parsed['api_queried'] = true;
+                                $parsed['api_endpoint'] = $bffUrl;
+                                $parsed['api_status_code'] = $response->status();
+                                return $parsed;
+                            }
+                        }
+                    } elseif ($response->status() === 401 || $response->status() === 403) {
+                        return [
+                            'success' => false,
+                            'has_history' => false,
+                            'api_queried' => true,
+                            'api_status_code' => $response->status(),
+                            'message' => "Dropi API: Error de autenticación (HTTP {$response->status()}). Verifica que tu Token JWT en Configuración Dropi esté actualizado.",
+                        ];
                     }
+                } catch (\Exception $e) {
+                    Log::warning("Dropi BFF Fingerprint exception: " . $e->getMessage());
                 }
-            } else {
-                Log::info("Dropi BFF Fingerprint response HTTP {$response->status()}: " . $response->body());
             }
-        } catch (\Exception $e) {
-            Log::warning("Dropi BFF Fingerprint exception: " . $e->getMessage());
         }
 
         // 2. Fallback: Query Dropi live orders index filtering by phone number
@@ -528,14 +554,25 @@ class DropiApiService
                 $ordersJson = $ordersResponse->json();
                 $ordersList = $ordersJson['objects'] ?? ($ordersJson['data'] ?? []);
                 if (is_array($ordersList) && count($ordersList) > 0) {
-                    return $this->aggregateDropiOrders($ordersList, $nationalPhone);
+                    $aggregated = $this->aggregateDropiOrders($ordersList, $nationalPhone);
+                    $aggregated['api_queried'] = true;
+                    $aggregated['api_endpoint'] = 'https://api.dropi.co/integrations/orders/index';
+                    $aggregated['api_status_code'] = $ordersResponse->status();
+                    return $aggregated;
                 }
             }
         } catch (\Exception $e) {
             Log::info("Dropi API orders index query by phone: " . $e->getMessage());
         }
 
-        return null;
+        return [
+            'success' => true,
+            'has_history' => false,
+            'api_queried' => true,
+            'phone' => $nationalPhone,
+            'formatted_phone' => '+57 ' . substr($nationalPhone, 0, 3) . ' ' . substr($nationalPhone, 3, 3) . ' ' . substr($nationalPhone, 6),
+            'message' => 'No se encontró historial de compras para este número de teléfono en la API de Dropi.',
+        ];
     }
 
     /**

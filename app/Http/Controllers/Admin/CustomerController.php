@@ -105,8 +105,8 @@ class CustomerController extends Controller
                 return response()->json($dropiData);
             }
 
-            // If Dropi API explicitly returned that this number has no history and no local orders exist
-            if (isset($dropiData['has_history']) && $dropiData['has_history'] === false && $orders->count() === 0) {
+            // If Dropi API returned an error or explicit no history and no local orders exist
+            if ($orders->count() === 0) {
                 return response()->json($dropiData);
             }
         }

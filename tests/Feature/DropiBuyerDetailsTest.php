@@ -23,6 +23,13 @@ class DropiBuyerDetailsTest extends TestCase
             'password' => bcrypt('password'),
             'is_admin' => true,
         ]);
+
+        \App\Models\DropiToken::create([
+            'store' => 'Tienda Test',
+            'token' => 'header.eyJzdWIiOiIzNjE4NjQiLCJ1c2VyX2lkIjozNjE4NjR9.signature',
+            'is_valid' => true,
+            'user_id_dropi' => '361864',
+        ]);
     }
 
     public function test_admin_can_query_buyer_details_by_phone(): void
@@ -72,6 +79,17 @@ class DropiBuyerDetailsTest extends TestCase
 
     public function test_buyer_details_returns_no_history_message_for_unknown_phone(): void
     {
+        \Illuminate\Support\Facades\Http::fake([
+            'https://api-v2.dropi.co/bff/customers/fingerprint/v2*' => \Illuminate\Support\Facades\Http::response([
+                'isSuccess' => true,
+                'data' => [
+                    'total_orders' => 0,
+                    'delivered_orders' => 0,
+                    'returns_orders' => 0,
+                ]
+            ], 200),
+        ]);
+
         $response = $this->actingAs($this->admin)->getJson('/admin/customers/buyer-details?phone=3122154598');
 
         $response->assertStatus(200);
@@ -85,13 +103,6 @@ class DropiBuyerDetailsTest extends TestCase
 
     public function test_buyer_details_fetches_positive_profile_from_dropi_bff_api(): void
     {
-        \App\Models\DropiToken::create([
-            'store' => 'Tienda Test',
-            'token' => 'header.eyJzdWIiOiIzNjE4NjQiLCJ1c2VyX2lkIjozNjE4NjR9.signature',
-            'is_valid' => true,
-            'user_id_dropi' => '361864',
-        ]);
-
         \Illuminate\Support\Facades\Http::fake([
             'https://api-v2.dropi.co/bff/customers/fingerprint/v2*' => \Illuminate\Support\Facades\Http::response([
                 'isSuccess' => true,
@@ -125,13 +136,6 @@ class DropiBuyerDetailsTest extends TestCase
 
     public function test_buyer_details_fetches_negative_profile_from_dropi_bff_api(): void
     {
-        \App\Models\DropiToken::create([
-            'store' => 'Tienda Test',
-            'token' => 'header.eyJzdWIiOiIzNjE4NjQiLCJ1c2VyX2lkIjozNjE4NjR9.signature',
-            'is_valid' => true,
-            'user_id_dropi' => '361864',
-        ]);
-
         \Illuminate\Support\Facades\Http::fake([
             'https://api-v2.dropi.co/bff/customers/fingerprint/v2*' => \Illuminate\Support\Facades\Http::response([
                 'isSuccess' => true,
