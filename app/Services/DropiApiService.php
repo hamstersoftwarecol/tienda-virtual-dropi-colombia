@@ -20,8 +20,31 @@ class DropiApiService
     }
 
     /**
-     * Fetch products exclusively from Dropi API
-     * (POST https://api.dropi.co/integrations/products/index with dropi-integration-key header)
+     * Generate WordPress & WooCommerce headers to emulate native Dropify plugin requests
+     */
+    public function getWordPressHeaders(string $token): array
+    {
+        $tokenRecord = $this->getActiveToken();
+        $storeUrl = !empty($tokenRecord?->integration_url) ? $tokenRecord->integration_url : 'https://tienda.hamstersoftware.com';
+        
+        if (!Str::startsWith($storeUrl, 'http')) {
+            $storeUrl = 'https://' . ltrim($storeUrl, '/');
+        }
+
+        return [
+            'User-Agent' => "WordPress/6.6.1; {$storeUrl}",
+            'Referer' => "{$storeUrl}/wp-admin/admin.php?page=dropi-products",
+            'Origin' => $storeUrl,
+            'Content-Type' => 'application/json;charset=UTF-8',
+            'dropi-integration-key' => $token,
+            'Accept' => 'application/json, text/plain, */*',
+            'X-Requested-With' => 'XMLHttpRequest',
+        ];
+    }
+
+    /**
+     * Fetch products directly from Dropi API with WooCommerce headers
+     * (POST https://api.dropi.co/integrations/products/index)
      */
     public function getProducts(
         int $perPage = 24,
@@ -45,8 +68,6 @@ class DropiApiService
 
         $token = trim($tokenRecord->token);
         $storeName = $tokenRecord->store ?: 'Tienda 1';
-        
-        // Exact official endpoint from Dropify
         $endpoint = "https://api.dropi.co/integrations/products/index";
 
         $postData = [
@@ -66,13 +87,9 @@ class DropiApiService
         }
 
         try {
-            $response = Http::withHeaders([
-                'Content-Type' => 'application/json;charset=UTF-8',
-                'dropi-integration-key' => $token,
-                'User-Agent' => 'Dropify/1.0',
-            ])
-            ->timeout(12)
-            ->post($endpoint, $postData);
+            $response = Http::withHeaders($this->getWordPressHeaders($token))
+                ->timeout(12)
+                ->post($endpoint, $postData);
 
             $json = $response->json();
 
@@ -85,7 +102,7 @@ class DropiApiService
                     'source' => 'api_live',
                     'products' => $normalized,
                     'total' => count($normalized),
-                    'message' => 'Productos sincronizados en tiempo real con la API de Dropi.',
+                    'message' => 'Productos sincronizados en tiempo real con la API oficial de Dropi Colombia.',
                 ];
             } else {
                 $errorMessage = $json['message'] ?? ($json['error'] ?? "Respuesta HTTP {$response->status()} de la API de Dropi.");
@@ -128,13 +145,9 @@ class DropiApiService
         $endpoint = "https://api.dropi.co/integrations/products/v2/{$id}";
 
         try {
-            $response = Http::withHeaders([
-                'Content-Type' => 'application/json;charset=UTF-8',
-                'dropi-integration-key' => $token,
-                'User-Agent' => 'Dropify/1.0',
-            ])
-            ->timeout(10)
-            ->get($endpoint);
+            $response = Http::withHeaders($this->getWordPressHeaders($token))
+                ->timeout(10)
+                ->get($endpoint);
 
             if ($response->successful()) {
                 $json = $response->json();
@@ -169,13 +182,26 @@ class DropiApiService
         }
 
         $name = $dropiProduct['name'] ?? 'Producto Dropi';
-        $wholesale = (float) ($dropiProduct['price'] ?? ($dropiProduct['wholesale_price'] ?? 0));
+        $wholesale = (float) ($dropiProduct['sale_price'] ?? ($dropiProduct['price'] ?? ($dropiProduct['wholesale_price'] ?? 0)));
         $suggested = (float) ($dropiProduct['suggested_price'] ?? ($wholesale * 1.5));
         $salePrice = $customPrice && $customPrice > 0 ? $customPrice : ($suggested > 0 ? $suggested : ($wholesale * 1.5));
         $comparePrice = $salePrice > $wholesale ? round($salePrice * 1.25) : null;
         $profit = max(0, $salePrice - $wholesale);
 
-        $stock = (int) ($dropiProduct['stock'] ?? 25);
+        // Calculate Stock
+        $stock = 20;
+        if (!empty($dropiProduct['warehouse_product']) && is_array($dropiProduct['warehouse_product'])) {
+            $totalStock = 0;
+            foreach ($dropiProduct['warehouse_product'] as $w) {
+                $totalStock += (int) ($w['stock'] ?? 0);
+            }
+            if ($totalStock > 0) {
+                $stock = $totalStock;
+            }
+        } elseif (isset($dropiProduct['stock'])) {
+            $stock = (int) $dropiProduct['stock'];
+        }
+
         $description = $dropiProduct['description'] ?? '';
         $shortDesc = Str::limit(strip_tags($description), 180);
 
@@ -183,6 +209,13 @@ class DropiApiService
         $images = [];
         if (!empty($dropiProduct['photos']) && is_array($dropiProduct['photos'])) {
             foreach ($dropiProduct['photos'] as $p) {
+                $url = is_array($p) ? ($p['urlS3'] ?? ($p['url'] ?? '')) : (is_object($p) ? ($p->urlS3 ?? ($p->url ?? '')) : (string)$p);
+                if (!empty($url)) {
+                    $images[] = Str::startsWith($url, 'http') ? $url : "https://dropi.co/{$url}";
+                }
+            }
+        } elseif (!empty($dropiProduct['gallery']) && is_array($dropiProduct['gallery'])) {
+            foreach ($dropiProduct['gallery'] as $p) {
                 $url = is_array($p) ? ($p['urlS3'] ?? ($p['url'] ?? '')) : (is_object($p) ? ($p->urlS3 ?? ($p->url ?? '')) : (string)$p);
                 if (!empty($url)) {
                     $images[] = Str::startsWith($url, 'http') ? $url : "https://dropi.co/{$url}";
@@ -196,9 +229,14 @@ class DropiApiService
 
         // Resolve Category
         if (!$categoryId) {
-            $categoryName = 'Tecnología';
-            if (!empty($dropiProduct['categories'][0])) {
-                $categoryName = is_array($dropiProduct['categories'][0]) ? ($dropiProduct['categories'][0]['name'] ?? 'General') : (is_object($dropiProduct['categories'][0]) ? ($dropiProduct['categories'][0]->name ?? 'General') : 'General');
+            $categoryName = 'General';
+            if (!empty($dropiProduct['categories']) && is_array($dropiProduct['categories'])) {
+                $firstCat = $dropiProduct['categories'][0] ?? null;
+                if (is_array($firstCat) && !empty($firstCat['name'])) {
+                    $categoryName = $firstCat['name'];
+                } elseif (is_object($firstCat) && !empty($firstCat->name)) {
+                    $categoryName = $firstCat->name;
+                }
             } elseif (!empty($dropiProduct['category'])) {
                 $categoryName = $dropiProduct['category'];
             }
@@ -285,17 +323,14 @@ class DropiApiService
         if (empty($token)) return;
 
         try {
-            Http::withHeaders([
-                'Content-Type' => 'application/json;charset=UTF-8',
-                'dropi-integration-key' => $token,
-            ])
-            ->timeout(5)
-            ->put("https://api.dropi.co/integrations/importlist/importstore/1", [
-                'products_id' => $dropiId,
-                'imported_to_store' => true,
-                'woocomerse_id' => $localProductId,
-                'woocomerse_url' => url("/product/{$localProductId}"),
-            ]);
+            Http::withHeaders($this->getWordPressHeaders($token))
+                ->timeout(5)
+                ->put("https://api.dropi.co/integrations/importlist/importstore/1", [
+                    'products_id' => $dropiId,
+                    'imported_to_store' => true,
+                    'woocomerse_id' => $localProductId,
+                    'woocomerse_url' => url("/product/{$localProductId}"),
+                ]);
         } catch (\Exception $e) {
             // Silently ignore
         }
@@ -335,19 +370,38 @@ class DropiApiService
             $item = (array) $obj;
             $id = (string) ($item['id'] ?? Str::random(6));
             $name = $item['name'] ?? 'Producto Dropi';
-            $wholesale = (float) ($item['price'] ?? ($item['wholesale_price'] ?? 0));
+            $wholesale = (float) ($item['sale_price'] ?? ($item['price'] ?? ($item['wholesale_price'] ?? 0)));
             $suggested = (float) ($item['suggested_price'] ?? ($wholesale * 1.5));
-            $stock = (int) ($item['stock'] ?? 20);
+            
+            // Stock calculation from warehouse_product
+            $stock = 20;
+            if (!empty($item['warehouse_product']) && is_array($item['warehouse_product'])) {
+                $totalStock = 0;
+                foreach ($item['warehouse_product'] as $w) {
+                    $totalStock += (int) ($w['stock'] ?? 0);
+                }
+                if ($totalStock > 0) {
+                    $stock = $totalStock;
+                }
+            } elseif (isset($item['stock'])) {
+                $stock = (int) $item['stock'];
+            }
 
+            // Image resolution
             $img = 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=800';
             if (!empty($item['photos']) && is_array($item['photos'])) {
                 $p = (array) $item['photos'][0];
                 $img = $p['urlS3'] ?? ($p['url'] ?? $img);
-                if (!Str::startsWith($img, 'http')) {
-                    $img = "https://dropi.co/{$img}";
-                }
+            } elseif (!empty($item['gallery']) && is_array($item['gallery'])) {
+                $p = (array) $item['gallery'][0];
+                $img = $p['urlS3'] ?? ($p['url'] ?? $img);
             }
 
+            if (!Str::startsWith($img, 'http')) {
+                $img = "https://dropi.co/{$img}";
+            }
+
+            // Category resolution
             $category = 'General';
             if (!empty($item['categories']) && is_array($item['categories'])) {
                 $c = (array) $item['categories'][0];
@@ -364,6 +418,7 @@ class DropiApiService
                 'image' => $img,
                 'description' => $item['description'] ?? '',
                 'store' => $storeName,
+                'provider' => $item['user']['store_name'] ?? null,
             ];
         }
         return $normalized;
