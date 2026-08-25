@@ -580,14 +580,16 @@ class DropiApiService
      */
     protected function parseDropiBffFingerprint(array $json, string $phone): ?array
     {
-        $data = $json['data'] ?? ($json['objects'] ?? ($json['result'] ?? $json));
+        $data = $json['data'] ?? ($json['objects'] ?? ($json['result'] ?? ($json['body'] ?? $json)));
         if (!is_array($data)) {
             return null;
         }
 
         // If the BFF endpoint returned a list/array of orders directly
         if (array_is_list($data) && count($data) > 0 && isset($data[0]['status'])) {
-            return $this->aggregateDropiOrders($data, $phone);
+            $agg = $this->aggregateDropiOrders($data, $phone);
+            $agg['raw_dropi_response'] = $json;
+            return $agg;
         }
 
         // If explicitly indicated no history
@@ -597,15 +599,45 @@ class DropiApiService
                 'has_history' => false,
                 'phone' => $phone,
                 'formatted_phone' => '+57 ' . substr($phone, 0, 3) . ' ' . substr($phone, 3, 3) . ' ' . substr($phone, 6),
-                'message' => 'No se encontró historial de compras para este número de teléfono.',
+                'message' => 'No se encontró historial de compras para este número de teléfono en la API de Dropi.',
+                'raw_dropi_response' => $json,
             ];
         }
 
-        // Extract total counts
-        $totalOrders = (int) ($data['total_orders'] ?? ($data['total'] ?? ($data['total_history'] ?? 0)));
-        $delivered = (int) ($data['delivered_orders'] ?? ($data['delivered_count'] ?? ($data['entregadas'] ?? ($data['delivered'] ?? 0))));
-        $returns = (int) ($data['returns_orders'] ?? ($data['returns_count'] ?? ($data['devoluciones'] ?? ($data['returns'] ?? ($data['cancelled'] ?? 0)))));
-        $inTransit = (int) ($data['in_transit_orders'] ?? ($data['in_transit_count'] ?? ($data['en_transito'] ?? ($data['in_transit'] ?? 0))));
+        // Extract raw carriers / transportadoras list first
+        $rawCarriers = $data['carriers_breakdown'] ?? ($data['carriers'] ?? ($data['transportadoras'] ?? ($data['transporters'] ?? ($data['carrier_stats'] ?? []))));
+        $carriersBreakdown = [];
+        $carrierDelivered = 0;
+        $carrierReturns = 0;
+        $carrierInTransit = 0;
+
+        if (is_array($rawCarriers)) {
+            foreach ($rawCarriers as $c) {
+                $cArr = (array) $c;
+                $cName = strtoupper($cArr['name'] ?? ($cArr['carrier'] ?? ($cArr['transportadora'] ?? 'Transportadora')));
+                $cTransit = (int) ($cArr['in_transit'] ?? ($cArr['en_transito'] ?? ($cArr['transit'] ?? 0)));
+                $cReturns = (int) ($cArr['returns'] ?? ($cArr['devoluciones'] ?? ($cArr['returned'] ?? ($cArr['cancelled'] ?? 0))));
+                $cDelivered = (int) ($cArr['delivered'] ?? ($cArr['entregadas'] ?? ($cArr['completed'] ?? 0)));
+
+                $carrierInTransit += $cTransit;
+                $carrierReturns += $cReturns;
+                $carrierDelivered += $cDelivered;
+
+                $carriersBreakdown[] = [
+                    'name' => $cName,
+                    'in_transit' => $cTransit,
+                    'returns' => $cReturns,
+                    'delivered' => $cDelivered,
+                ];
+            }
+        }
+
+        // Extract total counts (or derive from carriers if not at top level)
+        $delivered = (int) ($data['delivered_orders'] ?? ($data['delivered_count'] ?? ($data['entregadas'] ?? ($data['delivered'] ?? ($data['total_delivered'] ?? $carrierDelivered)))));
+        $returns = (int) ($data['returns_orders'] ?? ($data['returns_count'] ?? ($data['devoluciones'] ?? ($data['returns'] ?? ($data['cancelled'] ?? ($data['total_returns'] ?? $carrierReturns))))));
+        $inTransit = (int) ($data['in_transit_orders'] ?? ($data['in_transit_count'] ?? ($data['en_transito'] ?? ($data['in_transit'] ?? ($data['total_in_transit'] ?? $carrierInTransit)))));
+        $totalOrders = (int) ($data['total_orders'] ?? ($data['total'] ?? ($data['total_history'] ?? ($data['orders_count'] ?? ($delivered + $returns + $inTransit)))));
+
         $inStore = (int) ($data['in_store_orders'] ?? 0);
         $inOtherStores = (int) ($data['in_other_stores_orders'] ?? max(0, $totalOrders - $inStore));
 
@@ -616,6 +648,7 @@ class DropiApiService
                 'phone' => $phone,
                 'formatted_phone' => '+57 ' . substr($phone, 0, 3) . ' ' . substr($phone, 3, 3) . ' ' . substr($phone, 6),
                 'message' => 'No se encontró historial de compras para este número de teléfono.',
+                'raw_dropi_response' => $json,
             ];
         }
 
@@ -653,19 +686,16 @@ class DropiApiService
 
         $buyerType = $data['buyer_type'] ?? ($data['buyerType'] ?? ($totalOrders > 2 ? 'Comprador Frecuente' : 'Comprador Esporádico'));
 
-        // Carriers breakdown
-        $carriersBreakdown = [];
-        $rawCarriers = $data['carriers_breakdown'] ?? ($data['carriers'] ?? ($data['transportadoras'] ?? []));
-        if (is_array($rawCarriers)) {
-            foreach ($rawCarriers as $c) {
-                $cArr = (array) $c;
-                $carriersBreakdown[] = [
-                    'name' => strtoupper($cArr['name'] ?? ($cArr['carrier'] ?? 'Transportadora')),
-                    'in_transit' => (int) ($cArr['in_transit'] ?? ($cArr['en_transito'] ?? 0)),
-                    'returns' => (int) ($cArr['returns'] ?? ($cArr['devoluciones'] ?? 0)),
-                    'delivered' => (int) ($cArr['delivered'] ?? ($cArr['entregadas'] ?? 0)),
-                ];
-            }
+        // If carriersBreakdown is still empty, add default
+        if (empty($carriersBreakdown) && $totalOrders > 0) {
+            $carriersBreakdown = [
+                [
+                    'name' => 'Transportadora Nacional',
+                    'in_transit' => $inTransit,
+                    'returns' => $returns,
+                    'delivered' => $delivered,
+                ]
+            ];
         }
 
         // Shipping type breakdown

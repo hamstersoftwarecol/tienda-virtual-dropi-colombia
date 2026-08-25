@@ -378,6 +378,22 @@
                             </div>
                         </div>
                     </div>
+
+                    <!-- Diagnostic / Raw API response drawer -->
+                    <div class="mt-3 border-top pt-2">
+                        <button class="btn btn-link text-decoration-none text-muted p-0 small" type="button" data-bs-toggle="collapse" data-bs-target="#dropiApiDebugCollapse" aria-expanded="false">
+                            <i class="bi bi-terminal me-1"></i> <span style="font-size: 0.78rem;">Ver diagnóstico técnico de Dropi API</span>
+                        </button>
+                        <div class="collapse mt-2" id="dropiApiDebugCollapse">
+                            <div class="card card-body bg-dark text-white p-2.5 rounded-3 border-0" style="font-size: 0.72rem; font-family: monospace;">
+                                <div class="d-flex justify-content-between mb-1 text-secondary">
+                                    <span>Endpoint: <strong id="debugEndpoint" class="text-info">https://api-v2.dropi.co/bff/customers/fingerprint/v2</strong></span>
+                                    <span>HTTP: <strong id="debugHttpStatus" class="text-success">200</strong></span>
+                                </div>
+                                <pre id="debugRawResponse" class="mb-0 text-light" style="max-height: 140px; overflow-y: auto; white-space: pre-wrap; word-break: break-all;">Sin respuesta aún</pre>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -513,6 +529,17 @@ function fetchBuyerDetails() {
     .then(data => {
         loading.classList.add('d-none');
         searchBtn.disabled = false;
+
+        // Update technical debug info
+        const debugEndpointEl = document.getElementById('debugEndpoint');
+        const debugStatusEl = document.getElementById('debugHttpStatus');
+        const debugRawEl = document.getElementById('debugRawResponse');
+        if (debugEndpointEl) debugEndpointEl.textContent = data.api_endpoint || 'https://api-v2.dropi.co/bff/customers/fingerprint/v2';
+        if (debugStatusEl) {
+            debugStatusEl.textContent = data.api_status_code ? (data.api_status_code + ' OK') : (data.success ? '200 OK' : 'Error');
+            debugStatusEl.className = (data.api_status_code === 200 || data.success) ? 'text-success' : 'text-danger';
+        }
+        if (debugRawEl) debugRawEl.textContent = JSON.stringify(data.raw_dropi_response || data, null, 2);
 
         if (!data.success) {
             errorAlert.classList.remove('d-none');
