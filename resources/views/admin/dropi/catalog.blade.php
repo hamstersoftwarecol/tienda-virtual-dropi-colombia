@@ -76,24 +76,17 @@
 
                     <h6 class="fw-bold text-dark mb-1 text-truncate" title="{{ $sp->name }}">{{ $sp->name }}</h6>
 
-                    <div class="mb-2 small d-flex align-items-center gap-1">
-                        <span class="text-muted" style="font-size: 0.75rem;">Provider:</span>
-                        <span class="text-primary fw-semibold" style="font-size: 0.75rem;">
-                            @if(str_contains($sp->sku, 'CK-IN2U'))
-                                AUREO PERFUMERIA
-                            @elseif(str_contains($sp->sku, 'ORG-HUEV'))
-                                LLEVALOTODO
-                            @elseif(str_contains($sp->sku, 'MEGA-PROB'))
-                                VITALECOMS PROV
-                            @elseif(str_contains($sp->sku, 'MASAJ-OCT'))
-                                TUS MACHETES ONLINE <span class="badge bg-warning text-dark px-1 py-0 rounded-pill ms-1" style="font-size: 0.65rem;">✓ Verificado</span>
-                            @elseif(str_contains($sp->sku, 'PIEDRA-DEP'))
-                                COLOMBIA HOGAR <span class="badge bg-warning text-dark px-1 py-0 rounded-pill ms-1" style="font-size: 0.65rem;">✓ Verificado</span>
-                            @else
-                                {{ $sp->supplier ? $sp->supplier->name : 'DROPI PROVEEDOR' }}
+                    @if($sp->supplier || !empty($sp->category_name))
+                        <div class="mb-2 small d-flex align-items-center gap-1">
+                            <span class="text-muted" style="font-size: 0.75rem;">Provider:</span>
+                            <span class="text-primary fw-semibold text-truncate" style="font-size: 0.75rem;">
+                                {{ $sp->supplier ? $sp->supplier->name : 'PROVEEDOR DROPI' }}
+                            </span>
+                            @if($sp->supplier && $sp->supplier->is_verified)
+                                <span class="badge bg-warning text-dark px-1 py-0 rounded-pill ms-1" style="font-size: 0.65rem;">✓ Verificado</span>
                             @endif
-                        </span>
-                    </div>
+                        </div>
+                    @endif
 
                     <!-- Pricing Breakdown in COP -->
                     <div class="bg-light p-2 rounded-3 mb-3 small border">
