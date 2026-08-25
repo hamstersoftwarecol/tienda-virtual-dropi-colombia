@@ -254,79 +254,79 @@
         @yield('content')
     </main>
 
-    <!-- Footer -->
-    <footer class="site-footer mt-5">
+    <!-- Footer (Accessible Light Mode) -->
+    <footer class="site-footer mt-5 bg-white border-top">
         <div class="container">
             <div class="row g-4 mb-5">
                 <!-- Col 1: Brand Info -->
                 <div class="col-lg-4 col-md-6">
                     <div class="d-flex align-items-center gap-2 mb-3">
-                        <div class="bg-primary text-white rounded-3 d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
+                        <div class="bg-primary text-white rounded-3 d-flex align-items-center justify-content-center shadow-sm" style="width: 36px; height: 36px;">
                             <i class="bi bi-shop-window"></i>
                         </div>
-                        <span class="fs-4 fw-bold text-white">NovaStore</span>
+                        <span class="fs-4 fw-bold text-dark">NovaStore</span>
                     </div>
-                    <p class="small text-secondary mb-4">
+                    <p class="small text-muted mb-4">
                         Tu destino preferido para compras online. Productos originales, precios competitivos y entregas rápidas garantizadas en todo el país.
                     </p>
-                    <div class="d-flex gap-3">
-                        <a href="#" class="btn btn-outline-light btn-sm rounded-circle" style="width: 36px; height: 36px; display: inline-flex; align-items: center; justify-content: center;"><i class="bi bi-facebook"></i></a>
-                        <a href="#" class="btn btn-outline-light btn-sm rounded-circle" style="width: 36px; height: 36px; display: inline-flex; align-items: center; justify-content: center;"><i class="bi bi-instagram"></i></a>
-                        <a href="#" class="btn btn-outline-light btn-sm rounded-circle" style="width: 36px; height: 36px; display: inline-flex; align-items: center; justify-content: center;"><i class="bi bi-twitter-x"></i></a>
-                        <a href="#" class="btn btn-outline-light btn-sm rounded-circle" style="width: 36px; height: 36px; display: inline-flex; align-items: center; justify-content: center;"><i class="bi bi-tiktok"></i></a>
+                    <div class="d-flex gap-2">
+                        <a href="#" class="btn btn-light border btn-sm rounded-circle text-primary" style="width: 36px; height: 36px; display: inline-flex; align-items: center; justify-content: center;"><i class="bi bi-facebook"></i></a>
+                        <a href="#" class="btn btn-light border btn-sm rounded-circle text-primary" style="width: 36px; height: 36px; display: inline-flex; align-items: center; justify-content: center;"><i class="bi bi-instagram"></i></a>
+                        <a href="#" class="btn btn-light border btn-sm rounded-circle text-primary" style="width: 36px; height: 36px; display: inline-flex; align-items: center; justify-content: center;"><i class="bi bi-twitter-x"></i></a>
+                        <a href="#" class="btn btn-light border btn-sm rounded-circle text-primary" style="width: 36px; height: 36px; display: inline-flex; align-items: center; justify-content: center;"><i class="bi bi-tiktok"></i></a>
                     </div>
                 </div>
 
                 <!-- Col 2: Navigation Links -->
                 <div class="col-lg-2 col-md-6 col-6">
-                    <h6 class="text-white fw-bold mb-3">Enlaces Rápidos</h6>
+                    <h6 class="text-dark fw-bold mb-3">Enlaces Rápidos</h6>
                     <ul class="list-unstyled small d-flex flex-column gap-2">
-                        <li><a href="{{ route('home') }}">Inicio</a></li>
-                        <li><a href="{{ route('shop.index') }}">Catálogo Completo</a></li>
-                        <li><a href="{{ route('shop.index', ['on_sale' => 1]) }}">Ofertas Especiales</a></li>
-                        <li><a href="{{ route('cart.index') }}">Mi Carrito</a></li>
-                        <li><a href="{{ route('orders.index') }}">Rastreo de Pedidos</a></li>
+                        <li><a href="{{ route('home') }}" class="text-muted text-decoration-none">Inicio</a></li>
+                        <li><a href="{{ route('shop.index') }}" class="text-muted text-decoration-none">Catálogo Completo</a></li>
+                        <li><a href="{{ route('shop.index', ['on_sale' => 1]) }}" class="text-muted text-decoration-none">Ofertas Especiales</a></li>
+                        <li><a href="{{ route('cart.index') }}" class="text-muted text-decoration-none">Mi Carrito</a></li>
+                        <li><a href="{{ route('orders.index') }}" class="text-muted text-decoration-none">Rastreo de Pedidos</a></li>
                     </ul>
                 </div>
 
                 <!-- Col 3: Categories -->
                 <div class="col-lg-3 col-md-6 col-6">
-                    <h6 class="text-white fw-bold mb-3">Categorías Populares</h6>
+                    <h6 class="text-dark fw-bold mb-3">Categorías Populares</h6>
                     <ul class="list-unstyled small d-flex flex-column gap-2">
-                        <li><a href="{{ route('shop.index', ['category' => 'tecnologia-gadgets']) }}">Tecnología & Gadgets</a></li>
-                        <li><a href="{{ route('shop.index', ['category' => 'moda-tendencias']) }}">Moda & Tendencias</a></li>
-                        <li><a href="{{ route('shop.index', ['category' => 'calzado-sneakers']) }}">Calzado & Sneakers</a></li>
-                        <li><a href="{{ route('shop.index', ['category' => 'audio-sonido-pro']) }}">Audio & Sonido</a></li>
-                        <li><a href="{{ route('shop.index', ['category' => 'relojes-accesorios']) }}">Relojes & Accesorios</a></li>
+                        <li><a href="{{ route('shop.index', ['category' => 'tecnologia-gadgets']) }}" class="text-muted text-decoration-none">Tecnología & Gadgets</a></li>
+                        <li><a href="{{ route('shop.index', ['category' => 'moda-tendencias']) }}" class="text-muted text-decoration-none">Moda & Tendencias</a></li>
+                        <li><a href="{{ route('shop.index', ['category' => 'calzado-sneakers']) }}" class="text-muted text-decoration-none">Calzado & Sneakers</a></li>
+                        <li><a href="{{ route('shop.index', ['category' => 'audio-sonido-pro']) }}" class="text-muted text-decoration-none">Audio & Sonido</a></li>
+                        <li><a href="{{ route('shop.index', ['category' => 'relojes-accesorios']) }}" class="text-muted text-decoration-none">Relojes & Accesorios</a></li>
                     </ul>
                 </div>
 
                 <!-- Col 4: Newsletter -->
                 <div class="col-lg-3 col-md-6">
-                    <h6 class="text-white fw-bold mb-3">Suscríbete a Novedades</h6>
-                    <p class="small text-secondary mb-3">Recibe un 15% de descuento en tu primera compra y ofertas exclusivas.</p>
+                    <h6 class="text-dark fw-bold mb-3">Suscríbete a Novedades</h6>
+                    <p class="small text-muted mb-3">Recibe un 15% de descuento en tu primera compra y ofertas exclusivas.</p>
                     <form onsubmit="event.preventDefault(); window.showToast('¡Gracias por suscribirte al boletín!', 'success');" class="mb-3">
                         <div class="input-group">
-                            <input type="email" class="form-control form-control-sm bg-dark text-white border-secondary" placeholder="tu@email.com" required>
+                            <input type="email" class="form-control form-control-sm bg-light text-dark border" placeholder="tu@email.com" required>
                             <button class="btn btn-primary btn-sm px-3" type="submit"><i class="bi bi-send-fill"></i></button>
                         </div>
                     </form>
-                    <div class="small text-secondary">
-                        <i class="bi bi-lock-fill me-1"></i> Tus datos están 100% protegidos.
+                    <div class="small text-muted">
+                        <i class="bi bi-shield-check text-success me-1"></i> Tus datos están 100% protegidos.
                     </div>
                 </div>
             </div>
 
             <!-- Bottom: Payment & Copyright -->
-            <div class="row pt-4 border-top border-secondary border-opacity-25 align-items-center">
-                <div class="col-md-6 text-center text-md-start small text-secondary mb-3 mb-md-0">
-                    &copy; {{ date('Y') }} <strong>NovaStore</strong>. Desarrollado con Laravel, Breeze & Bootstrap 5. Todos los derechos reservados.
+            <div class="row pt-4 border-top align-items-center">
+                <div class="col-md-6 text-center text-md-start small text-muted mb-3 mb-md-0">
+                    &copy; {{ date('Y') }} <strong>NovaStore</strong>. Todos los derechos reservados.
                 </div>
                 <div class="col-md-6 text-center text-md-end">
                     <div class="d-inline-flex gap-2 text-secondary fs-4">
-                        <i class="bi bi-credit-card" title="Tarjetas de Crédito / Débito"></i>
-                        <i class="bi bi-paypal" title="PayPal"></i>
-                        <i class="bi bi-shield-check" title="Compra Protegida SSL"></i>
+                        <i class="bi bi-credit-card text-primary" title="Tarjetas de Crédito / Débito"></i>
+                        <i class="bi bi-paypal text-primary" title="PayPal"></i>
+                        <i class="bi bi-shield-check text-success" title="Compra Protegida SSL"></i>
                     </div>
                 </div>
             </div>

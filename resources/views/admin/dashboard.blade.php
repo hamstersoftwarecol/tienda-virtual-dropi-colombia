@@ -4,25 +4,25 @@
 @section('page_header', 'Panel de Control y Métricas (COP)')
 
 @section('content')
-<!-- Dropi Fast Sync Hero Banner -->
-<div class="card border-0 shadow-sm rounded-4 text-white mb-4 overflow-hidden position-relative" style="background: linear-gradient(135deg, #1e1b4b 0%, #312e81 40%, #4338ca 100%);">
+<!-- Dropi Fast Sync Hero Banner (Light Mode) -->
+<div class="card shadow-sm rounded-4 mb-4 overflow-hidden position-relative" style="background: linear-gradient(135deg, #eef2ff 0%, #ffffff 50%, #eff6ff 100%); border: 1.5px solid #c7d2fe;">
     <div class="p-4 d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
         <div>
             <div class="d-flex align-items-center gap-2 mb-2">
                 <span class="badge bg-primary text-white fw-bold rounded-pill px-3 py-1">
                     <i class="bi bi-cloud-arrow-down-fill me-1"></i> Sincronización Dropi API
                 </span>
-                <span class="badge bg-white bg-opacity-25 text-white rounded-pill px-2 py-1 small">
+                <span class="badge bg-success-subtle text-success border border-success border-opacity-25 rounded-pill px-2 py-1 small">
                     <i class="bi bi-shield-check me-1"></i> Dropshipping Colombia
                 </span>
             </div>
-            <h4 class="fw-bold mb-1">Importar Productos desde Dropi</h4>
-            <p class="mb-0 text-white-50 small">
+            <h4 class="fw-bold mb-1 text-dark">Importar Productos desde Dropi</h4>
+            <p class="mb-0 text-secondary small">
                 Explora el catálogo mayorista de Dropi e importa productos en un clic con margen de ganancia calculado en COP.
             </p>
         </div>
         <div class="d-flex align-items-center gap-2 flex-shrink-0">
-            <a href="{{ route('admin.dropi.products.index') }}" class="btn btn-warning btn-lg rounded-pill px-4 fw-bold shadow-sm d-flex align-items-center gap-2 text-dark">
+            <a href="{{ route('admin.dropi.products.index') }}" class="btn btn-primary btn-lg rounded-pill px-4 fw-bold shadow-sm d-flex align-items-center gap-2">
                 <i class="bi bi-box-arrow-in-down-fill"></i> Explorar Catálogo Dropi
             </a>
         </div>

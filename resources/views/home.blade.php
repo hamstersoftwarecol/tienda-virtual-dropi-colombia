@@ -3,49 +3,49 @@
 @section('title', 'Inicio')
 
 @section('content')
-<!-- Hero Section -->
+<!-- Hero Section (Light Mode) -->
 <div class="container py-4">
-    <div class="hero-banner p-4 p-md-5 text-white">
+    <div class="hero-banner p-4 p-md-5">
         <div class="row align-items-center g-4">
             <div class="col-lg-7">
-                <span class="badge bg-warning text-dark px-3 py-2 rounded-pill fw-bold mb-3">
-                    <i class="bi bi-stars me-1"></i> NUEVA COLECCIÓN 2026 COLOMBIA
+                <span class="badge bg-primary-subtle text-primary border border-primary border-opacity-25 px-3 py-2 rounded-pill fw-bold mb-3">
+                    <i class="bi bi-stars me-1 text-warning"></i> NUEVA COLECCIÓN 2026 COLOMBIA
                 </span>
-                <h1 class="display-4 fw-extrabold text-white mb-3 tracking-tight">
+                <h1 class="display-4 fw-extrabold text-dark mb-3 tracking-tight">
                     Tecnología, Estilo y Confort <br>
-                    <span class="text-info">Envíos a Toda Colombia</span>
+                    <span class="text-primary">Envíos a Toda Colombia</span>
                 </h1>
-                <p class="lead text-light text-opacity-75 mb-4" style="max-width: 540px;">
+                <p class="lead text-secondary mb-4" style="max-width: 540px;">
                     Encuentra las mejores marcas en pesos colombianos (COP). Disfruta de envío gratis en compras mayores a <strong>$ 150.000 COP</strong> y pago contra entrega seguro.
                 </p>
                 <div class="d-flex flex-wrap gap-3">
-                    <a href="{{ route('shop.index') }}" class="btn btn-primary btn-lg rounded-pill px-4 py-2 fw-bold">
+                    <a href="{{ route('shop.index') }}" class="btn btn-primary btn-lg rounded-pill px-4 py-2 fw-bold shadow-sm">
                         <i class="bi bi-bag-fill me-2"></i> Explorar Catálogo
                     </a>
-                    <a href="{{ route('shop.index', ['on_sale' => 1]) }}" class="btn btn-outline-light btn-lg rounded-pill px-4 py-2 fw-semibold">
-                        <i class="bi bi-tag-fill me-2"></i> Ver Ofertas Especiales
+                    <a href="{{ route('shop.index', ['on_sale' => 1]) }}" class="btn btn-outline-primary btn-lg rounded-pill px-4 py-2 fw-semibold">
+                        <i class="bi bi-tag-fill me-2 text-danger"></i> Ver Ofertas Especiales
                     </a>
                 </div>
 
                 <!-- Trust Badges -->
-                <div class="row g-3 mt-4 pt-3 border-top border-white border-opacity-10 text-white text-opacity-80 small">
+                <div class="row g-3 mt-4 pt-3 border-top border-secondary border-opacity-10 text-secondary small">
                     <div class="col-sm-4 d-flex align-items-center gap-2">
-                        <i class="bi bi-truck text-warning fs-4"></i>
-                        <span>Envíos a todo el país</span>
+                        <i class="bi bi-truck text-primary fs-4"></i>
+                        <span class="fw-semibold">Envíos a todo el país</span>
                     </div>
                     <div class="col-sm-4 d-flex align-items-center gap-2">
                         <i class="bi bi-shield-check text-success fs-4"></i>
-                        <span>PSE, Nequi y Tarjetas</span>
+                        <span class="fw-semibold">PSE, Nequi y Tarjetas</span>
                     </div>
                     <div class="col-sm-4 d-flex align-items-center gap-2">
                         <i class="bi bi-arrow-repeat text-info fs-4"></i>
-                        <span>30 Días de Garantía</span>
+                        <span class="fw-semibold">30 Días de Garantía</span>
                     </div>
                 </div>
             </div>
             <div class="col-lg-5 d-none d-lg-block text-center position-relative">
                 <div class="position-relative d-inline-block">
-                    <img src="https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=700&auto=format&fit=crop&q=80" alt="Hero Product" class="img-fluid rounded-4 shadow-lg" style="max-height: 380px; object-fit: cover; border: 4px solid rgba(255,255,255,0.15);">
+                    <img src="https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=700&auto=format&fit=crop&q=80" alt="Hero Product" class="img-fluid rounded-4 shadow-sm" style="max-height: 380px; object-fit: cover; border: 4px solid #ffffff;">
                     <!-- Floating Promo Card -->
                     <div class="card position-absolute bottom-0 start-0 translate-middle-y bg-white text-dark shadow-lg rounded-3 border-0 p-2 ms-n3" style="max-width: 210px;">
                         <div class="d-flex align-items-center gap-2">

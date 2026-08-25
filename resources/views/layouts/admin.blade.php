@@ -14,14 +14,14 @@
 <body class="bg-light">
     <div class="d-flex min-vh-100">
         <!-- Sidebar -->
-        <aside class="admin-sidebar p-3 d-none d-lg-flex flex-column">
+        <aside class="admin-sidebar p-3 d-none d-lg-flex flex-column bg-white border-end">
             <!-- Admin Brand -->
-            <div class="d-flex align-items-center gap-2 pb-4 mb-3 border-bottom border-secondary border-opacity-25 px-2">
-                <div class="bg-primary text-white rounded-3 d-flex align-items-center justify-content-center" style="width: 38px; height: 38px;">
+            <div class="d-flex align-items-center gap-2 pb-3 mb-3 border-bottom px-2">
+                <div class="bg-primary text-white rounded-3 d-flex align-items-center justify-content-center shadow-sm" style="width: 38px; height: 38px;">
                     <i class="bi bi-shield-lock-fill fs-5"></i>
                 </div>
                 <div>
-                    <h6 class="text-white fw-bold mb-0">NovaStore</h6>
+                    <h6 class="text-dark fw-bold mb-0">NovaStore</h6>
                     <small class="text-muted" style="font-size: 0.75rem;">Panel de Administración</small>
                 </div>
             </div>
@@ -62,21 +62,21 @@
                     <i class="bi bi-ticket-perforated"></i> Cupones de Descuento
                 </a>
                 
-                <hr class="border-secondary border-opacity-25 my-3">
+                <hr class="my-3 text-muted opacity-25">
 
-                <a class="nav-link text-info" href="{{ route('home') }}" target="_blank">
+                <a class="nav-link text-primary fw-semibold" href="{{ route('home') }}" target="_blank">
                     <i class="bi bi-box-arrow-up-right"></i> Ver Tienda Pública
                 </a>
             </nav>
 
             <!-- User Info Footer -->
-            <div class="pt-3 border-top border-secondary border-opacity-25 px-2 d-flex align-items-center justify-content-between">
+            <div class="pt-3 border-top px-2 d-flex align-items-center justify-content-between">
                 <div class="d-flex align-items-center gap-2">
-                    <div class="bg-dark rounded-circle text-white d-flex align-items-center justify-content-center border" style="width: 36px; height: 36px;">
-                        <i class="bi bi-person-fill"></i>
+                    <div class="bg-primary-subtle text-primary rounded-circle d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
+                        <i class="bi bi-person-fill fs-5"></i>
                     </div>
                     <div class="small">
-                        <div class="text-white fw-semibold text-truncate" style="max-width: 120px;">{{ auth()->user()->name }}</div>
+                        <div class="text-dark fw-semibold text-truncate" style="max-width: 120px;">{{ auth()->user()->name }}</div>
                         <div class="text-muted" style="font-size: 0.75rem;">Administrador</div>
                     </div>
                 </div>
@@ -90,7 +90,7 @@
         </aside>
 
         <!-- Main Wrapper -->
-        <div class="flex-grow-1 d-flex flex-column">
+        <div class="flex-grow-1 d-flex flex-column bg-light">
             <!-- Admin Topbar -->
             <header class="bg-white border-bottom py-3 px-4 d-flex justify-content-between align-items-center shadow-sm">
                 <!-- Mobile Toggle -->
@@ -110,7 +110,7 @@
                     <div class="dropdown">
                         <button class="btn btn-light rounded-pill border dropdown-toggle d-flex align-items-center gap-2 py-1 px-3" type="button" data-bs-toggle="dropdown">
                             <i class="bi bi-person-circle text-primary"></i>
-                            <span class="small fw-semibold">{{ auth()->user()->name }}</span>
+                            <span class="small fw-semibold text-dark">{{ auth()->user()->name }}</span>
                         </button>
                         <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 rounded-3">
                             <li><a class="dropdown-item py-2" href="{{ route('profile.edit') }}"><i class="bi bi-person me-2"></i> Mi Perfil</a></li>
@@ -129,12 +129,17 @@
             </header>
 
             <!-- Admin Mobile Offcanvas -->
-            <div class="offcanvas offcanvas-start bg-dark text-white" tabindex="-1" id="adminMobileSidebar">
-                <div class="offcanvas-header border-bottom border-secondary">
-                    <h5 class="offcanvas-title text-white fw-bold">NovaStore Admin</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
+            <div class="offcanvas offcanvas-start bg-white text-dark" tabindex="-1" id="adminMobileSidebar">
+                <div class="offcanvas-header border-bottom">
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="bg-primary text-white rounded-3 d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
+                            <i class="bi bi-shield-lock-fill"></i>
+                        </div>
+                        <h5 class="offcanvas-title text-dark fw-bold mb-0">NovaStore Admin</h5>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
                 </div>
-                <div class="offcanvas-body admin-sidebar w-100">
+                <div class="offcanvas-body p-3">
                     <nav class="nav flex-column">
                         <a class="nav-link {{ request()->routeIs('admin.dashboard') ? 'active' : '' }}" href="{{ route('admin.dashboard') }}">
                             <i class="bi bi-speedometer2"></i> Dashboard
@@ -160,8 +165,8 @@
                         <a class="nav-link {{ request()->routeIs('admin.coupons.*') ? 'active' : '' }}" href="{{ route('admin.coupons.index') }}">
                             <i class="bi bi-ticket-perforated"></i> Cupones
                         </a>
-                        <hr class="border-secondary my-3">
-                        <a class="nav-link text-info" href="{{ route('home') }}">
+                        <hr class="my-3 text-muted opacity-25">
+                        <a class="nav-link text-primary fw-semibold" href="{{ route('home') }}" target="_blank">
                             <i class="bi bi-box-arrow-up-right"></i> Ir a la Tienda
                         </a>
                     </nav>
