@@ -150,7 +150,7 @@ class StoreTest extends TestCase
             ]
         ];
 
-        // Place Order with PSE
+        // Place Order with Cash on Delivery (Contra Entrega)
         $response = $this->actingAs($this->customer)
             ->withSession(['cart_items' => $cart])
             ->post('/checkout/process', [
@@ -161,18 +161,18 @@ class StoreTest extends TestCase
                 'shipping_address' => 'Carrera 15 # 85-30',
                 'shipping_city' => 'Bogotá D.C.',
                 'shipping_department' => 'Cundinamarca',
-                'shipping_postal_code' => '110221',
-                'payment_method' => 'pse',
+                'payment_method' => 'cash_on_delivery',
             ]);
 
         $this->assertDatabaseHas('orders', [
             'customer_email' => 'cliente@tienda.com',
             'user_id' => $this->customer->id,
             'status' => 'pending',
-            'payment_method' => 'pse',
+            'payment_method' => 'cash_on_delivery',
+            'recipient_dni' => '1020304050',
         ]);
 
-        $order = Order::where('customer_email', 'cliente@tienda.com')->first();
+        $order = Order::where('customer_email', 'cliente@tienda.com')->latest()->first();
         $this->assertNotNull($order);
         $response->assertRedirect(route('checkout.success', $order->order_number));
 
@@ -180,6 +180,47 @@ class StoreTest extends TestCase
         $successResponse = $this->actingAs($this->customer)->get(route('checkout.success', $order->order_number));
         $successResponse->assertStatus(200);
         $successResponse->assertSee($order->order_number);
+        $successResponse->assertSee('Pago Contra Entrega en Efectivo');
+    }
+
+    public function test_checkout_with_bre_b_payment(): void
+    {
+        $cart = [
+            $this->product->id => [
+                'id' => $this->product->id,
+                'name' => $this->product->name,
+                'slug' => $this->product->slug,
+                'price' => (float) $this->product->price,
+                'image' => $this->product->image,
+                'sku' => $this->product->sku,
+                'quantity' => 1,
+                'total' => (float) $this->product->price,
+            ]
+        ];
+
+        // Place Order with Bre-B (@ALM143)
+        $response = $this->actingAs($this->customer)
+            ->withSession(['cart_items' => $cart])
+            ->post('/checkout/process', [
+                'customer_name' => 'Cliente Bre-B',
+                'customer_email' => 'breb@tienda.com',
+                'customer_phone' => '+57 310 987 6543',
+                'recipient_dni' => '1098765432',
+                'shipping_address' => 'Calle 100 # 15-20',
+                'shipping_city' => 'Medellín',
+                'shipping_department' => 'Antioquia',
+                'payment_method' => 'bre_b',
+            ]);
+
+        $this->assertDatabaseHas('orders', [
+            'customer_email' => 'breb@tienda.com',
+            'payment_method' => 'bre_b',
+            'recipient_dni' => '1098765432',
+        ]);
+
+        $order = Order::where('customer_email', 'breb@tienda.com')->first();
+        $this->assertNotNull($order);
+        $this->assertEquals('Bre-B (@ALM143)', $order->payment_method_label);
     }
 
     public function test_admin_dashboard_and_product_crud(): void

@@ -61,9 +61,7 @@ class CheckoutController extends Controller
             'shipping_address' => 'required|string|max:255',
             'shipping_city' => 'required|string|max:100',
             'shipping_department' => 'required|string|max:100',
-            'shipping_carrier' => 'nullable|string|max:100',
-            'shipping_postal_code' => 'nullable|string|max:20',
-            'payment_method' => 'required|in:credit_card,pse,nequi,cash_on_delivery,bank_transfer,paypal',
+            'payment_method' => 'required|in:cash_on_delivery,bre_b,credit_card,pse,nequi,bank_transfer',
             'order_notes' => 'nullable|string|max:1000',
         ]);
 
@@ -78,7 +76,8 @@ class CheckoutController extends Controller
         try {
             // Generate unique Order Number
             $orderNumber = 'ORD-' . strtoupper(Str::random(6)) . '-' . date('Ymd');
-            $carrier = $request->shipping_carrier ?: 'Coordinadora';
+            $carrier = $request->shipping_carrier ?: 'Nacional (Coordinadora / Servientrega)';
+            $postalCode = $request->shipping_postal_code ?: '110111';
 
             $order = Order::create([
                 'user_id' => auth()->id(),
@@ -97,11 +96,11 @@ class CheckoutController extends Controller
                 'shipping_address' => $request->shipping_address,
                 'shipping_city' => $request->shipping_city,
                 'shipping_department' => $request->shipping_department,
-                'shipping_postal_code' => $request->shipping_postal_code,
+                'shipping_postal_code' => $postalCode,
                 'shipping_carrier' => $carrier,
                 'order_notes' => $request->order_notes,
                 'payment_method' => $request->payment_method,
-                'payment_status' => $request->payment_method === 'credit_card' ? 'paid' : 'pending',
+                'payment_status' => 'pending',
             ]);
 
             foreach ($items as $item) {

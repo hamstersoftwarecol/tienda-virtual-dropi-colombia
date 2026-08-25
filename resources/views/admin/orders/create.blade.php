@@ -55,7 +55,7 @@
                     </div>
 
                     <div class="col-md-6">
-                        <label for="recipient_dni" class="form-label small fw-bold">Cédula de Ciudadanía / DNI *</label>
+                        <label for="recipient_dni" class="form-label small fw-bold">Cédula de Ciudadanía (C.C.) *</label>
                         <input type="text" name="recipient_dni" id="recipient_dni" class="form-control rounded-3" required placeholder="Ej: 1020456789" value="{{ old('recipient_dni') }}">
                     </div>
 

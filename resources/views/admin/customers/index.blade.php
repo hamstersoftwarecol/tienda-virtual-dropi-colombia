@@ -7,7 +7,7 @@
 <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
     <div>
         <h4 class="fw-bold mb-1 text-dark"><i class="bi bi-people text-primary me-2"></i>Clientes & Compradores Registrados</h4>
-        <p class="text-muted small mb-0">Gestiona los datos de contacto, cédulas DNI y direcciones de despacho de tus compradores.</p>
+        <p class="text-muted small mb-0">Gestiona los datos de contacto, cédulas C.C. y direcciones de despacho de tus compradores.</p>
     </div>
     <div class="d-flex align-items-center gap-2 flex-wrap">
         <button type="button" class="btn btn-primary rounded-pill px-3 py-2 shadow-sm fw-semibold btn-sm d-flex align-items-center gap-1.5" data-bs-toggle="modal" data-bs-target="#newCustomerModal">
@@ -22,7 +22,7 @@
         <div class="col-md-9">
             <div class="input-group input-group-sm">
                 <span class="input-group-text bg-light border-end-0 rounded-start-pill ps-3"><i class="bi bi-search text-muted"></i></span>
-                <input type="text" name="q" value="{{ request('q') }}" class="form-control bg-light border-start-0 rounded-end-pill" placeholder="Buscar por nombre, cédula DNI, correo, teléfono o ciudad...">
+                <input type="text" name="q" value="{{ request('q') }}" class="form-control bg-light border-start-0 rounded-end-pill" placeholder="Buscar por nombre, cédula C.C., correo, teléfono o ciudad...">
             </div>
         </div>
         <div class="col-md-3 d-flex gap-2">
@@ -41,7 +41,7 @@
             <thead class="bg-light small text-muted text-uppercase">
                 <tr>
                     <th class="ps-4 py-3">Cliente</th>
-                    <th class="py-3">Cédula / DNI</th>
+                    <th class="py-3">Cédula (C.C.)</th>
                     <th class="py-3">Contacto</th>
                     <th class="py-3">Ubicación (Colombia)</th>
                     <th class="py-3 text-center">Pedidos</th>
@@ -122,7 +122,7 @@
 
                     <div class="row g-2 mb-3">
                         <div class="col-6">
-                            <label for="dni" class="form-label small fw-bold">Cédula / DNI *</label>
+                            <label for="dni" class="form-label small fw-bold">Cédula (C.C.) *</label>
                             <input type="text" name="dni" id="dni" class="form-control rounded-3" required placeholder="Ej: 52890123">
                         </div>
                         <div class="col-6">

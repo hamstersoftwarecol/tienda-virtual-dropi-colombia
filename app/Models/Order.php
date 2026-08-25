@@ -109,13 +109,14 @@ class Order extends Model
     public function getPaymentMethodLabelAttribute(): string
     {
         return match($this->payment_method) {
-            'credit_card' => 'Tarjeta de Crédito / Débito',
-            'pse' => 'PSE (Transferencia Bancaria / Cuentas de Ahorro)',
-            'nequi' => 'Nequi / Daviplata',
             'cash_on_delivery' => 'Pago Contra Entrega en Efectivo',
-            'bank_transfer' => 'Transferencia Bancolombia / Davivienda',
+            'bre_b' => 'Bre-B (@ALM143)',
+            'credit_card' => 'Tarjeta de Crédito / Débito',
+            'pse' => 'PSE (Transferencia Bancaria)',
+            'nequi' => 'Nequi / Daviplata',
+            'bank_transfer' => 'Transferencia Bancaria',
             'paypal' => 'PayPal',
-            default => strtoupper($this->payment_method),
+            default => strtoupper((string)$this->payment_method),
         };
     }
 }
