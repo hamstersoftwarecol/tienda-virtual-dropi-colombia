@@ -248,7 +248,7 @@
 
                         <!-- Progress Bar -->
                         <div class="d-flex justify-content-between align-items-center small mb-1.5">
-                            <span class="text-muted">Entregadas</span>
+                            <span class="text-muted" id="buyerMetricLabel">Entregadas</span>
                             <strong class="text-success font-monospace" id="buyerDeliveredMetric">1 (100%)</strong>
                         </div>
                         <div class="progress rounded-pill" style="height: 8px;">
@@ -538,9 +538,25 @@ function fetchBuyerDetails() {
 
         document.getElementById('buyerDeliveryCertainty').textContent = data.delivery_certainty;
         document.getElementById('buyerDeliveryAction').textContent = data.delivery_action;
-        document.getElementById('buyerDeliveredMetric').textContent = `${data.delivered_count} (${data.delivered_percent}%)`;
-        document.getElementById('buyerProgressBar').style.width = data.delivered_percent + '%';
-        document.getElementById('buyerProgressBar').className = `progress-bar bg-${data.delivery_probability_class} rounded-pill`;
+
+        // Metric label & progress bar (Entregadas vs Devoluciones)
+        const metricLabelEl = document.getElementById('buyerMetricLabel');
+        const metricValueEl = document.getElementById('buyerDeliveredMetric');
+        const progressBarEl = document.getElementById('buyerProgressBar');
+
+        if (data.metric_label) {
+            metricLabelEl.textContent = data.metric_label;
+            metricValueEl.textContent = data.metric_value;
+            metricValueEl.className = `font-monospace text-${data.delivery_probability_class}`;
+            progressBarEl.style.width = (data.delivery_probability_class === 'danger' ? (data.returns_percent || 100) : (data.delivered_percent || 100)) + '%';
+            progressBarEl.className = `progress-bar bg-${data.delivery_probability_class} rounded-pill`;
+        } else {
+            metricLabelEl.textContent = 'Entregadas';
+            metricValueEl.textContent = `${data.delivered_count} (${data.delivered_percent}%)`;
+            metricValueEl.className = `font-monospace text-${data.delivery_probability_class}`;
+            progressBarEl.style.width = (data.delivered_percent || 0) + '%';
+            progressBarEl.className = `progress-bar bg-${data.delivery_probability_class} rounded-pill`;
+        }
 
         // Render Negative Reports (Incidencias y Devoluciones)
         const negIcon = document.getElementById('negativeReportIcon');

@@ -100,17 +100,19 @@ class DropiBuyerDetailsTest extends TestCase
 
     public function test_buyer_details_returns_high_risk_profile_for_phone_with_returns(): void
     {
-        $response = $this->actingAs($this->admin)->getJson('/admin/customers/buyer-details?phone=3001234567');
+        $response = $this->actingAs($this->admin)->getJson('/admin/customers/buyer-details?phone=3114567890');
 
         $response->assertStatus(200);
         $response->assertJson([
             'success' => true,
             'has_history' => true,
-            'phone' => '3001234567',
-            'buyer_type' => 'Comprador No Confiable',
+            'phone' => '3114567890',
+            'buyer_type' => 'Comprador Frecuente',
             'delivery_probability' => 'Riesgosa',
-            'returns_count' => 3,
-            'delivered_count' => 1,
+            'returns_count' => 11,
+            'delivered_count' => 0,
+            'metric_label' => 'Devoluciones',
+            'has_negative_reports' => true,
         ]);
     }
 
