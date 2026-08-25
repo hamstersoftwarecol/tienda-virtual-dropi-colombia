@@ -39,8 +39,6 @@ class DropiApiService
             'Origin' => $storeUrl,
             'Content-Type' => 'application/json;charset=UTF-8',
             'dropi-integration-key' => $cleanToken,
-            'Authorization' => 'Bearer ' . $cleanToken,
-            'token' => $cleanToken,
             'Accept' => 'application/json, text/plain, */*',
             'X-Requested-With' => 'XMLHttpRequest',
         ];
