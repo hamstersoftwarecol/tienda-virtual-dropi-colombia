@@ -29,7 +29,7 @@ return new class extends Migration
         Schema::create('supplier_products', function (Blueprint $table) {
             $table->id();
             $table->string('dropi_id')->nullable()->index();
-            $table->foreignId('supplier_id')->constrained('suppliers')->onDelete('cascade');
+            $table->foreignId('supplier_id')->nullable()->constrained('suppliers')->nullOnDelete();
             $table->string('name');
             $table->string('slug')->nullable();
             $table->string('sku')->nullable();

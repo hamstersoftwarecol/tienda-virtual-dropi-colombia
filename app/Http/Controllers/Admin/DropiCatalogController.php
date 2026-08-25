@@ -23,10 +23,8 @@ class DropiCatalogController extends Controller
     {
         $settings = DropiSetting::getSettings();
 
-        // If catalog is empty and token is configured, auto-fetch from Dropi API
-        if (SupplierProduct::count() === 0 && !empty($settings->auth_token)) {
-            $this->dropiService->syncFromDropiApi();
-        }
+        // Ensure real Dropi catalog is populated and accessible
+        $this->dropiService->ensureCatalogPopulated();
 
         $filters = $request->only(['q', 'category', 'is_imported', 'min_price', 'max_price', 'sort']);
         $supplierProducts = $this->dropiService->searchSupplierProducts($filters);

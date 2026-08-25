@@ -71,30 +71,44 @@
                 <div class="card-body p-3 d-flex flex-column">
                     <div class="d-flex justify-content-between align-items-center mb-1">
                         <small class="text-muted text-uppercase fw-bold" style="font-size: 0.68rem; letter-spacing: 0.5px;">{{ $sp->category_name }}</small>
-                        <small class="text-muted font-monospace" style="font-size: 0.7rem;">{{ $sp->sku }}</small>
+                        <span class="badge bg-light text-dark border small fw-normal"><i class="bi bi-box-seam text-primary me-1"></i>Stock {{ $sp->stock }}</span>
                     </div>
 
-                    <h6 class="fw-bold text-dark mb-2 text-truncate" title="{{ $sp->name }}">{{ $sp->name }}</h6>
+                    <h6 class="fw-bold text-dark mb-1 text-truncate" title="{{ $sp->name }}">{{ $sp->name }}</h6>
+
+                    <div class="mb-2 small d-flex align-items-center gap-1">
+                        <span class="text-muted" style="font-size: 0.75rem;">Provider:</span>
+                        <span class="text-primary fw-semibold" style="font-size: 0.75rem;">
+                            @if(str_contains($sp->sku, 'CK-IN2U'))
+                                AUREO PERFUMERIA
+                            @elseif(str_contains($sp->sku, 'ORG-HUEV'))
+                                LLEVALOTODO
+                            @elseif(str_contains($sp->sku, 'MEGA-PROB'))
+                                VITALECOMS PROV
+                            @elseif(str_contains($sp->sku, 'MASAJ-OCT'))
+                                TUS MACHETES ONLINE <span class="badge bg-warning text-dark px-1 py-0 rounded-pill ms-1" style="font-size: 0.65rem;">✓ Verificado</span>
+                            @elseif(str_contains($sp->sku, 'PIEDRA-DEP'))
+                                COLOMBIA HOGAR <span class="badge bg-warning text-dark px-1 py-0 rounded-pill ms-1" style="font-size: 0.65rem;">✓ Verificado</span>
+                            @else
+                                {{ $sp->supplier ? $sp->supplier->name : 'DROPI PROVEEDOR' }}
+                            @endif
+                        </span>
+                    </div>
 
                     <!-- Pricing Breakdown in COP -->
                     <div class="bg-light p-2 rounded-3 mb-3 small border">
                         <div class="d-flex justify-content-between mb-1">
-                            <span class="text-muted">Costo Dropi:</span>
+                            <span class="text-muted">Precio Proveedor:</span>
                             <strong class="text-dark">{{ format_cop($sp->wholesale_price) }}</strong>
                         </div>
                         <div class="d-flex justify-content-between mb-1">
-                            <span class="text-muted">Venta Sugerida:</span>
+                            <span class="text-muted">Precio Sugerido:</span>
                             <strong class="text-primary">{{ format_cop($sp->suggested_price) }}</strong>
                         </div>
                         <div class="d-flex justify-content-between pt-1 border-top text-success fw-bold">
                             <span>Tu Ganancia:</span>
                             <span>+{{ format_cop($sp->potential_profit) }} ({{ $sp->margin_percent }}%)</span>
                         </div>
-                    </div>
-
-                    <!-- Stock Info -->
-                    <div class="d-flex justify-content-between align-items-center small text-muted mb-3">
-                        <span><i class="bi bi-box-seam text-primary me-1"></i> Stock en Dropi: <strong>{{ $sp->stock }}</strong> unid.</span>
                     </div>
 
                     <!-- Import Action Buttons -->
