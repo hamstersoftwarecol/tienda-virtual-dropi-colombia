@@ -27,10 +27,13 @@ return new class extends Migration
             $table->string('customer_name');
             $table->string('customer_email');
             $table->string('customer_phone');
+            $table->string('recipient_dni')->nullable();
             $table->string('shipping_address');
             $table->string('shipping_city');
             $table->string('shipping_state')->nullable();
+            $table->string('shipping_department')->nullable();
             $table->string('shipping_postal_code')->nullable();
+            $table->string('shipping_carrier')->nullable();
             $table->text('order_notes')->nullable();
 
             // Payment Info

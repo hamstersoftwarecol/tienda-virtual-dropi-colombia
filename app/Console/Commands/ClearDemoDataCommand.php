@@ -4,13 +4,10 @@ namespace App\Console\Commands;
 
 use App\Models\Category;
 use App\Models\Coupon;
-use App\Models\DropiSetting;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\Review;
-use App\Models\Supplier;
-use App\Models\SupplierProduct;
 use App\Models\User;
 use App\Models\WooCommerceApiKey;
 use Illuminate\Console\Command;
@@ -21,7 +18,7 @@ use Illuminate\Support\Str;
 class ClearDemoDataCommand extends Command
 {
     protected $signature = 'store:clear-demo {--admin-email=admin@tienda.com} {--admin-password=password}';
-    protected $description = 'Borra todos los datos demo de la tienda (productos, pedidos, clientes, cupones, proveedores) conservando únicamente al Administrador y las claves de integración';
+    protected $description = 'Borra todos los datos demo de la tienda (productos, pedidos, clientes, cupones) conservando únicamente al Administrador y las claves de integración';
 
     public function handle(): int
     {
@@ -51,20 +48,15 @@ class ClearDemoDataCommand extends Command
         Category::truncate();
         $this->line('✓ Categorías eliminadas.');
 
-        // 5. Borrar Catálogo de Proveedores / Dropi
-        SupplierProduct::truncate();
-        Supplier::truncate();
-        $this->line('✓ Proveedores y productos del importador eliminados.');
-
-        // 6. Borrar Cupones
+        // 5. Borrar Cupones
         Coupon::truncate();
         $this->line('✓ Cupones eliminados.');
 
-        // 7. Borrar todos los clientes no administradores
+        // 6. Borrar todos los clientes no administradores
         User::where('is_admin', false)->delete();
         $this->line('✓ Clientes y compradores demo eliminados.');
 
-        // 8. Asegurar que el usuario Administrador existe y no se borre
+        // 7. Asegurar que el usuario Administrador existe y no se borre
         $adminEmail = $this->option('admin-email');
         $adminPassword = $this->option('admin-password');
 
@@ -87,37 +79,20 @@ class ClearDemoDataCommand extends Command
             $this->info("✓ Usuario Administrador conservado: {$admin->email}");
         }
 
-        // 9. Asegurar configuración de Dropi y claves de WooCommerce
-        $settings = DropiSetting::first();
-        if ($settings) {
-            $settings->update([
-                'auth_token' => 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwOi8vYXBwLmRyb3BpLmNvOjgwIiwiaWF0IjoxNzg3NTk3NTMzLCJleHAiOjQ5NDMyNzExMzMsIm5iZiI6MTc4NzU5NzUzMywianRpIjoiWWxUb3NqczNCQVF5N1Q0QiIsInN1YiI6IjM2MTg2NCIsInBydiI6Ijg3ZTBhZjFlZjlmZDE1ODEyZmRlYzk3MTUzYTE0ZTBiMDQ3NTQ2YWEiLCJhdWQiOiJXT09DT01FUkNFIiwidG9rZW5fdHlwZSI6IklOVEVHUkFUSU9OUyIsIndiX2lkIjoxLCJpbnRlZ3JhdGlvbl90eXBlIjoiV09PQ09NRVJDRSIsImludGVncmF0aW9uX3R5cGVfaWQiOjEsImlwX3VybCI6W10sImludGVncmF0aW9uX3VybCI6Imh0dHBzOi8vdGllbmRhLmhhbXN0ZXJzb2Z0d2FyZS5jb20ifQ.OwRhf_UySrddaA7EPnn_69MnYq_I0WdcIGedQezpig8',
-            ]);
-        } else {
-            DropiSetting::create([
-                'api_url' => 'https://api.dropi.co/api/',
-                'auth_token' => 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwOi8vYXBwLmRyb3BpLmNvOjgwIiwiaWF0IjoxNzg3NTk3NTMzLCJleHAiOjQ5NDMyNzExMzMsIm5iZiI6MTc4NzU5NzUzMywianRpIjoiWWxUb3NqczNCQVF5N1Q0QiIsInN1YiI6IjM2MTg2NCIsInBydiI6Ijg3ZTBhZjFlZjlmZDE1ODEyZmRlYzk3MTUzYTE0ZTBiMDQ3NTQ2YWEiLCJhdWQiOiJXT09DT01FUkNFIiwidG9rZW5fdHlwZSI6IklOVEVHUkFUSU9OUyIsIndiX2lkIjoxLCJpbnRlZ3JhdGlvbl90eXBlIjoiV09PQ09NRVJDRSIsImludGVncmF0aW9uX3R5cGVfaWQiOjEsImlwX3VybCI6W10sImludGVncmF0aW9uX3VybCI6Imh0dHBzOi8vdGllbmRhLmhhbXN0ZXJzb2Z0d2FyZS5jb20ifQ.OwRhf_UySrddaA7EPnn_69MnYq_I0WdcIGedQezpig8',
-                'email' => $admin->email,
-                'auto_sync_orders' => true,
-                'default_markup_percent' => 40,
-                'default_carrier' => 'Coordinadora',
-                'last_sync_at' => now(),
-            ]);
-        }
-
+        // 8. Asegurar claves de WooCommerce
         if (WooCommerceApiKey::count() === 0) {
             WooCommerceApiKey::create([
                 'user_id' => $admin->id,
-                'description' => 'Integración Dropi.co Oficial',
+                'description' => 'Integración WooCommerce REST API',
                 'permissions' => 'read_write',
-                'consumer_key' => 'ck_dropi_' . Str::random(32),
-                'consumer_secret' => 'cs_dropi_' . Str::random(32),
-                'truncated_key' => 'dropi99',
+                'consumer_key' => 'ck_' . Str::random(32),
+                'consumer_secret' => 'cs_' . Str::random(32),
+                'truncated_key' => 'api99',
                 'is_active' => true,
                 'last_access_at' => now(),
             ]);
         }
-        $this->line('✓ Configuración de Dropi y Claves de WooCommerce conservadas.');
+        $this->line('✓ Claves de WooCommerce conservadas.');
 
         DB::statement('PRAGMA foreign_keys = ON;'); // SQLite
         try {

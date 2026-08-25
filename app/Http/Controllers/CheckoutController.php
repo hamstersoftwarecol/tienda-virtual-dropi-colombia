@@ -13,12 +13,10 @@ use Illuminate\Support\Str;
 class CheckoutController extends Controller
 {
     protected CartService $cartService;
-    protected \App\Services\DropiService $dropiService;
 
-    public function __construct(CartService $cartService, \App\Services\DropiService $dropiService)
+    public function __construct(CartService $cartService)
     {
         $this->cartService = $cartService;
-        $this->dropiService = $dropiService;
     }
 
     public function index()
@@ -127,12 +125,6 @@ class CheckoutController extends Controller
             }
 
             DB::commit();
-
-            // Auto dispatch to Dropi if enabled
-            $settings = \App\Models\DropiSetting::getSettings();
-            if ($settings->auto_sync_orders) {
-                $this->dropiService->dispatchOrderToDropi($order, $carrier);
-            }
 
             // Clear Cart
             $this->cartService->clear();

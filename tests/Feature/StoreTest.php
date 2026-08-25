@@ -137,24 +137,33 @@ class StoreTest extends TestCase
 
     public function test_checkout_and_order_creation_flow(): void
     {
-        // Add item to cart first
-        $this->post('/cart/add', [
-            'product_id' => $this->product->id,
-            'quantity' => 1,
-        ]);
+        $cart = [
+            $this->product->id => [
+                'id' => $this->product->id,
+                'name' => $this->product->name,
+                'slug' => $this->product->slug,
+                'price' => (float) $this->product->price,
+                'image' => $this->product->image,
+                'sku' => $this->product->sku,
+                'quantity' => 1,
+                'total' => (float) $this->product->price,
+            ]
+        ];
 
         // Place Order with PSE
-        $response = $this->actingAs($this->customer)->post('/checkout/process', [
-            'customer_name' => 'Cliente Test',
-            'customer_email' => 'cliente@tienda.com',
-            'customer_phone' => '+57 300 123 4567',
-            'recipient_dni' => '1020304050',
-            'shipping_address' => 'Carrera 15 # 85-30',
-            'shipping_city' => 'Bogotá D.C.',
-            'shipping_department' => 'Cundinamarca',
-            'shipping_postal_code' => '110221',
-            'payment_method' => 'pse',
-        ]);
+        $response = $this->actingAs($this->customer)
+            ->withSession(['cart_items' => $cart])
+            ->post('/checkout/process', [
+                'customer_name' => 'Cliente Test',
+                'customer_email' => 'cliente@tienda.com',
+                'customer_phone' => '+57 300 123 4567',
+                'recipient_dni' => '1020304050',
+                'shipping_address' => 'Carrera 15 # 85-30',
+                'shipping_city' => 'Bogotá D.C.',
+                'shipping_department' => 'Cundinamarca',
+                'shipping_postal_code' => '110221',
+                'payment_method' => 'pse',
+            ]);
 
         $this->assertDatabaseHas('orders', [
             'customer_email' => 'cliente@tienda.com',

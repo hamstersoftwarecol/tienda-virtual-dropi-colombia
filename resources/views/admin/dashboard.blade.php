@@ -4,31 +4,6 @@
 @section('page_header', 'Panel de Control y Métricas (COP)')
 
 @section('content')
-<!-- Dropi Fast Import Hero Banner -->
-<div class="card border-0 shadow-sm rounded-4 text-white mb-4 overflow-hidden position-relative" style="background: linear-gradient(135deg, #1e1b4b 0%, #312e81 40%, #4338ca 100%);">
-    <div class="p-4 d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
-        <div>
-            <div class="d-flex align-items-center gap-2 mb-2">
-                <span class="badge bg-warning text-dark fw-bold rounded-pill px-3 py-1">
-                    <i class="bi bi-box-arrow-in-down"></i> Importador Dropi Colombia
-                </span>
-                <span class="badge bg-white bg-opacity-25 text-white rounded-pill px-2 py-1 small">
-                    <i class="bi bi-shield-check"></i> Token JWT Activo
-                </span>
-            </div>
-            <h4 class="fw-bold mb-1">Importar Productos Reales de Dropi</h4>
-            <p class="mb-0 text-white-50 small">
-                Importa individualmente tus productos de Dropi con nombre, imágenes, costo mayorista, precio de venta en COP, cantidad, descripción y categoría.
-            </p>
-        </div>
-        <div class="d-flex align-items-center gap-2 flex-shrink-0">
-            <a href="{{ route('admin.dropi.catalog') }}" class="btn btn-warning btn-lg rounded-pill px-4 fw-bold shadow-sm d-flex align-items-center gap-2">
-                <i class="bi bi-plus-circle-fill"></i> Importar Producto Dropi
-            </a>
-        </div>
-    </div>
-</div>
-
 <!-- KPI Stat Cards -->
 <div class="row g-3 mb-4">
     <!-- Revenue -->

@@ -12,35 +12,10 @@ use Illuminate\Support\Str;
 class ProductController extends Controller
 {
     /**
-     * Format a Laravel Product model into WooCommerce v3 JSON object
+     * Format a Laravel Product into WooCommerce REST API Product object
      */
-    protected function formatWooCommerceProduct(Product $product): array
+    private function formatWooCommerceProduct(Product $product): array
     {
-        $images = [];
-        if ($product->image) {
-            $images[] = [
-                'id' => $product->id * 10,
-                'date_created' => $product->created_at?->toIso8601String(),
-                'src' => $product->image,
-                'name' => $product->name,
-                'alt' => $product->name,
-            ];
-        }
-
-        if ($product->images && is_array($product->images)) {
-            foreach ($product->images as $idx => $img) {
-                if ($img !== $product->image) {
-                    $images[] = [
-                        'id' => ($product->id * 10) + $idx + 1,
-                        'date_created' => $product->created_at?->toIso8601String(),
-                        'src' => $img,
-                        'name' => $product->name . ' - ' . ($idx + 1),
-                        'alt' => $product->name,
-                    ];
-                }
-            }
-        }
-
         $categories = [];
         if ($product->category) {
             $categories[] = [
@@ -50,8 +25,15 @@ class ProductController extends Controller
             ];
         }
 
-        $regularPrice = (string) ($product->compare_price ?: $product->price);
-        $salePrice = $product->compare_price ? (string) $product->price : '';
+        $images = [];
+        if (!empty($product->image)) {
+            $images[] = [
+                'id' => 1,
+                'src' => $product->image,
+                'name' => $product->name,
+                'alt' => $product->name,
+            ];
+        }
 
         return [
             'id' => $product->id,
@@ -59,7 +41,6 @@ class ProductController extends Controller
             'slug' => $product->slug,
             'permalink' => url('/product/' . $product->slug),
             'date_created' => $product->created_at?->toIso8601String(),
-            'date_created_gmt' => $product->created_at?->toIso8601String(),
             'date_modified' => $product->updated_at?->toIso8601String(),
             'type' => 'simple',
             'status' => $product->is_active ? 'publish' : 'draft',
@@ -69,11 +50,11 @@ class ProductController extends Controller
             'short_description' => $product->short_description ?: '',
             'sku' => $product->sku ?: '',
             'price' => (string) $product->price,
-            'regular_price' => $regularPrice,
-            'sale_price' => $salePrice,
+            'regular_price' => (string) ($product->compare_price ?: $product->price),
+            'sale_price' => $product->compare_price ? (string) $product->price : '',
             'date_on_sale_from' => null,
             'date_on_sale_to' => null,
-            'price_html' => '<span class="woocommerce-Price-amount amount">$ ' . number_format($product->price, 0, ',', '.') . ' COP</span>',
+            'price_html' => '<span class="woocommerce-Price-amount amount">' . number_format($product->price, 0, ',', '.') . '&nbsp;<span class="woocommerce-Price-currencySymbol">COP</span></span>',
             'on_sale' => (bool) ($product->compare_price && $product->compare_price > $product->price),
             'purchasable' => true,
             'total_sales' => $product->sales_count ?: 0,
@@ -119,12 +100,7 @@ class ProductController extends Controller
             'variations' => [],
             'grouped_products' => [],
             'menu_order' => 0,
-            'meta_data' => [
-                ['id' => 1, 'key' => '_wholesale_price', 'value' => (string) ($product->wholesale_price ?: $product->price * 0.6)],
-                ['id' => 2, 'key' => '_dropi_id', 'value' => (string) $product->dropi_id],
-                ['id' => 3, 'key' => '_supplier_id', 'value' => (string) $product->supplier_id],
-                ['id' => 4, 'key' => '_is_dropshipping', 'value' => $product->is_dropshipping ? 'yes' : 'no'],
-            ],
+            'meta_data' => [],
             '_links' => [
                 'self' => [['href' => url('/wp-json/wc/v3/products/' . $product->id)]],
                 'collection' => [['href' => url('/wp-json/wc/v3/products')]],
@@ -137,7 +113,7 @@ class ProductController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        $query = Product::with('category', 'supplier');
+        $query = Product::with('category');
 
         if ($request->has('search') && $request->search != '') {
             $s = $request->search;
@@ -180,7 +156,7 @@ class ProductController extends Controller
      */
     public function show(int $id): JsonResponse
     {
-        $product = Product::with('category', 'supplier')->findOrFail($id);
+        $product = Product::with('category')->findOrFail($id);
         return response()->json($this->formatWooCommerceProduct($product));
     }
 
@@ -223,19 +199,6 @@ class ProductController extends Controller
             $categoryId = $defaultCat->id;
         }
 
-        // Check meta_data for Dropi keys
-        $meta = $request->input('meta_data', []);
-        $dropiId = null;
-        $wholesalePrice = null;
-        foreach ($meta as $m) {
-            if (isset($m['key']) && $m['key'] === '_dropi_id') {
-                $dropiId = $m['value'];
-            }
-            if (isset($m['key']) && $m['key'] === '_wholesale_price') {
-                $wholesalePrice = (float) $m['value'];
-            }
-        }
-
         $finalPrice = $salePrice > 0 ? $salePrice : $price;
         $comparePrice = $salePrice > 0 ? $price : null;
 
@@ -244,17 +207,13 @@ class ProductController extends Controller
             'name' => $name,
             'slug' => Str::slug($name) . '-' . Str::random(5),
             'sku' => $sku,
-            'dropi_id' => $dropiId,
             'short_description' => $shortDescription,
             'description' => $description,
             'price' => $finalPrice,
             'compare_price' => $comparePrice,
-            'wholesale_price' => $wholesalePrice ?: ($finalPrice * 0.6),
-            'profit_margin' => $finalPrice - ($wholesalePrice ?: ($finalPrice * 0.6)),
             'stock' => $stock,
             'image' => $mainImage,
             'images' => $imageList ?: [$mainImage],
-            'is_dropshipping' => (bool) $dropiId,
             'is_active' => true,
         ]);
 

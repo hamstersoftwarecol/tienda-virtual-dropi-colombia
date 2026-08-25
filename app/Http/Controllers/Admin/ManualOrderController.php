@@ -7,20 +7,12 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\User;
-use App\Services\DropiService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class ManualOrderController extends Controller
 {
-    protected DropiService $dropiService;
-
-    public function __construct(DropiService $dropiService)
-    {
-        $this->dropiService = $dropiService;
-    }
-
     public function create()
     {
         $products = Product::where('is_active', true)->where('stock', '>', 0)->get();
@@ -47,7 +39,6 @@ class ManualOrderController extends Controller
             'shipping_cost' => 'nullable|numeric|min:0',
             'discount' => 'nullable|numeric|min:0',
             'order_notes' => 'nullable|string|max:1000',
-            'dispatch_to_dropi' => 'nullable|boolean',
         ]);
 
         DB::beginTransaction();
@@ -117,11 +108,6 @@ class ManualOrderController extends Controller
             }
 
             DB::commit();
-
-            // Auto dispatch to Dropi if selected
-            if ($request->boolean('dispatch_to_dropi')) {
-                $this->dropiService->dispatchOrderToDropi($order, $request->shipping_carrier);
-            }
 
             return redirect()->route('admin.orders.show', $order->id)
                 ->with('success', "¡Pedido #{$order->order_number} creado exitosamente con sus datos de comprador y transportadora!");

@@ -123,14 +123,6 @@
                         </select>
                     </div>
                 </div>
-
-                <div class="form-check form-switch p-3 bg-light rounded-3 border">
-                    <input class="form-check-input ms-0 me-3" type="checkbox" name="dispatch_to_dropi" value="1" id="dispatch_to_dropi" checked>
-                    <label class="form-check-label fw-bold text-dark" for="dispatch_to_dropi">
-                        <i class="bi bi-cloud-arrow-up-fill text-primary me-1"></i> Despachar automáticamente a Dropi y generar Guía de Transporte
-                    </label>
-                    <small class="text-muted d-block ms-5">Si se activa, el pedido se registrará inmediatamente en Dropi con la transportadora seleccionada.</small>
-                </div>
             </div>
         </div>
 

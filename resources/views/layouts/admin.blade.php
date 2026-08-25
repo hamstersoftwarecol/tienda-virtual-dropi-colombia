@@ -32,26 +32,20 @@
                     <i class="bi bi-speedometer2"></i> Dashboard
                 </a>
 
-                <div class="text-muted small text-uppercase fw-bold px-3 mt-3 mb-1" style="font-size: 0.68rem; letter-spacing: 0.5px;">Catálogo & Dropi</div>
+                <div class="text-muted small text-uppercase fw-bold px-3 mt-3 mb-1" style="font-size: 0.68rem; letter-spacing: 0.5px;">Catálogo de Productos</div>
                 <a class="nav-link {{ request()->routeIs('admin.products.*') ? 'active' : '' }}" href="{{ route('admin.products.index') }}">
                     <i class="bi bi-box-seam"></i> Productos en Tienda
                 </a>
                 <a class="nav-link {{ request()->routeIs('admin.categories.*') ? 'active' : '' }}" href="{{ route('admin.categories.index') }}">
                     <i class="bi bi-tags"></i> Categorías
                 </a>
-                <a class="nav-link {{ request()->routeIs('admin.dropi.catalog') ? 'active' : '' }}" href="{{ route('admin.dropi.catalog') }}">
-                    <i class="bi bi-cloud-arrow-down text-warning"></i> Importador Dropi
-                </a>
 
-                <div class="text-muted small text-uppercase fw-bold px-3 mt-3 mb-1" style="font-size: 0.68rem; letter-spacing: 0.5px;">Ventas & Despachos</div>
+                <div class="text-muted small text-uppercase fw-bold px-3 mt-3 mb-1" style="font-size: 0.68rem; letter-spacing: 0.5px;">Ventas & Pedidos</div>
                 <a class="nav-link {{ request()->routeIs('admin.orders.index', 'admin.orders.show') ? 'active' : '' }}" href="{{ route('admin.orders.index') }}">
                     <i class="bi bi-receipt"></i> Pedidos
                 </a>
                 <a class="nav-link {{ request()->routeIs('admin.orders.create') ? 'active' : '' }}" href="{{ route('admin.orders.create') }}">
                     <i class="bi bi-cart-plus text-info"></i> Generar Pedido
-                </a>
-                <a class="nav-link {{ request()->routeIs('admin.dropi.orders') ? 'active' : '' }}" href="{{ route('admin.dropi.orders') }}">
-                    <i class="bi bi-truck text-success"></i> Despachos Dropi
                 </a>
                 <a class="nav-link {{ request()->routeIs('admin.customers.*') ? 'active' : '' }}" href="{{ route('admin.customers.index') }}">
                     <i class="bi bi-people"></i> Clientes & Compradores
@@ -145,17 +139,11 @@
                         <a class="nav-link {{ request()->routeIs('admin.products.*') ? 'active' : '' }}" href="{{ route('admin.products.index') }}">
                             <i class="bi bi-box-seam"></i> Productos
                         </a>
-                        <a class="nav-link {{ request()->routeIs('admin.dropi.catalog') ? 'active' : '' }}" href="{{ route('admin.dropi.catalog') }}">
-                            <i class="bi bi-cloud-arrow-down text-warning"></i> Importador Dropi
-                        </a>
                         <a class="nav-link {{ request()->routeIs('admin.orders.*') ? 'active' : '' }}" href="{{ route('admin.orders.index') }}">
                             <i class="bi bi-receipt"></i> Pedidos
                         </a>
                         <a class="nav-link {{ request()->routeIs('admin.orders.create') ? 'active' : '' }}" href="{{ route('admin.orders.create') }}">
                             <i class="bi bi-cart-plus"></i> Generar Pedido
-                        </a>
-                        <a class="nav-link {{ request()->routeIs('admin.dropi.orders') ? 'active' : '' }}" href="{{ route('admin.dropi.orders') }}">
-                            <i class="bi bi-truck text-success"></i> Despachos Dropi
                         </a>
                         <a class="nav-link {{ request()->routeIs('admin.customers.*') ? 'active' : '' }}" href="{{ route('admin.customers.index') }}">
                             <i class="bi bi-people"></i> Clientes

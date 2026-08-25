@@ -50,8 +50,6 @@ class WooCommerceApiTest extends TestCase
             'slug' => 'microfono-inalambrico-dropi-pro',
             'sku' => 'MIC-DRP-01',
             'price' => 75000.00,
-            'wholesale_price' => 45000.00,
-            'profit_margin' => 30000.00,
             'stock' => 50,
             'image' => 'https://images.unsplash.com/photo-1590658268037-6bf12165a8df',
             'is_active' => true,
@@ -112,7 +110,6 @@ class WooCommerceApiTest extends TestCase
         $this->assertDatabaseHas('products', [
             'name' => 'Smartwatch Dropi Connect',
             'sku' => 'SMT-WC-02',
-            'dropi_id' => 'DRP-998811',
         ]);
     }
 
