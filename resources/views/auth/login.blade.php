@@ -62,13 +62,4 @@
             </a>
         </div>
     </form>
-
-    <!-- Demo Credentials Box -->
-    <div class="mt-4 pt-3 border-top text-start">
-        <div class="badge bg-light text-dark border p-2 w-100 text-start font-monospace small">
-            <div class="fw-bold mb-1 text-primary"><i class="bi bi-info-circle me-1"></i> Cuentas de Demostración:</div>
-            <div><strong>Admin:</strong> admin@tienda.com | password</div>
-            <div><strong>Cliente:</strong> cliente@tienda.com | password</div>
-        </div>
-    </div>
 </x-guest-layout>
