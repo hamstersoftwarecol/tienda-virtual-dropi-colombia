@@ -26,7 +26,10 @@ class DropiProductController extends Controller
         $selectedCategory = $request->input('category', 'all');
 
         // Fetch Dropi products catalog
-        $dropiProducts = $this->dropiApi->getDropiCatalog($search, $selectedCategory);
+        $apiResult = $this->dropiApi->getProducts(50, 0, $search, 'id', 'DESC', $selectedCategory);
+        $dropiProducts = $apiResult['products'] ?? [];
+        $apiMessage = $apiResult['message'] ?? '';
+        $apiSource = $apiResult['source'] ?? 'catalog';
 
         // Local imported products
         $importedProducts = Product::whereNotNull('dropi_id')
@@ -45,7 +48,9 @@ class DropiProductController extends Controller
             'importedCount',
             'totalDropiProducts',
             'search',
-            'selectedCategory'
+            'selectedCategory',
+            'apiMessage',
+            'apiSource'
         ));
     }
 

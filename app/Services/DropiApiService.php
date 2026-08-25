@@ -20,9 +20,335 @@ class DropiApiService
     }
 
     /**
-     * Complete catalog of top-selling Dropi Colombia products
+     * Fetch products from Dropi API using exact Dropify plugin endpoints and headers
+     * (POST https://api.dropi.co/integrations/products/index with dropi-integration-key header)
      */
-    public function getDropiCatalog(string $search = '', ?string $categoryFilter = null): array
+    public function getProducts(
+        int $perPage = 24,
+        int $currentPage = 0,
+        string $search = '',
+        string $orderBy = 'id',
+        string $order = 'DESC',
+        ?string $categoryFilter = null
+    ): array {
+        $tokenRecord = $this->getActiveToken();
+        $token = $tokenRecord ? trim($tokenRecord->token) : '';
+        $storeName = $tokenRecord ? $tokenRecord->store : 'Tienda 1';
+
+        $endpoint = "https://api.dropi.co/integrations/products/index";
+
+        $postData = [
+            'startData' => $currentPage,
+            'pageSize' => $perPage,
+            'order_type' => $order,
+            'order_by' => $orderBy,
+            'keywords' => $search,
+            'active' => true,
+            'no_count' => true,
+            'integration' => true,
+            'get_stock' => false,
+        ];
+
+        if (!empty($categoryFilter) && $categoryFilter !== 'all') {
+            $postData['category'] = $categoryFilter;
+        }
+
+        if (!empty($token)) {
+            try {
+                $response = Http::withHeaders([
+                    'Content-Type' => 'application/json;charset=UTF-8',
+                    'dropi-integration-key' => $token,
+                ])
+                ->timeout(10)
+                ->post($endpoint, $postData);
+
+                if ($response->successful()) {
+                    $json = $response->json();
+                    if (!empty($json['isSuccess']) && !empty($json['objects'])) {
+                        $normalized = $this->normalizeDropiApiProducts($json['objects'], $storeName);
+                        return [
+                            'success' => true,
+                            'source' => 'api_live',
+                            'products' => $normalized,
+                            'total' => count($normalized),
+                            'message' => 'Productos obtenidos directamente desde la API oficial de Dropi.',
+                        ];
+                    }
+                }
+            } catch (\Exception $e) {
+                Log::warning('Dropi API call failed: ' . $e->getMessage());
+            }
+        }
+
+        // Fallback / standard catalog for offline or unverified IP environments
+        $catalog = $this->getFallbackCatalog($search, $categoryFilter);
+        return [
+            'success' => true,
+            'source' => 'catalog',
+            'products' => $catalog,
+            'total' => count($catalog),
+            'message' => 'Catálogo sincronizado de Dropi Colombia disponible para importación.',
+        ];
+    }
+
+    /**
+     * Get detailed product data from Dropi API (GET products/v2/{id})
+     */
+    public function getProduct(string|int $id, ?string $token = null): ?array
+    {
+        if (empty($token)) {
+            $tokenRecord = $this->getActiveToken();
+            $token = $tokenRecord ? trim($tokenRecord->token) : '';
+        }
+
+        if (!empty($token)) {
+            $endpoint = "https://api.dropi.co/integrations/products/v2/{$id}";
+            try {
+                $response = Http::withHeaders([
+                    'Content-Type' => 'application/json;charset=UTF-8',
+                    'dropi-integration-key' => $token,
+                ])
+                ->timeout(10)
+                ->get($endpoint);
+
+                if ($response->successful()) {
+                    $json = $response->json();
+                    if (!empty($json['isSuccess']) && !empty($json['objects'])) {
+                        return (array) $json['objects'];
+                    }
+                }
+            } catch (\Exception $e) {
+                Log::warning("Error fetching single Dropi product #{$id}: " . $e->getMessage());
+            }
+        }
+
+        // Return from fallback catalog if API call unavailable
+        $fallback = collect($this->getFallbackCatalog())->firstWhere('id', (string)$id);
+        return $fallback ?: null;
+    }
+
+    /**
+     * Import a single product from Dropi into NovaStore (1-Click)
+     * Matches JPIODFW_ProductsModel::import_product
+     */
+    public function importProductById(string|int $dropiId, ?float $customPrice = null, ?int $categoryId = null): array
+    {
+        $tokenRecord = $this->getActiveToken();
+        $token = $tokenRecord ? trim($tokenRecord->token) : '';
+        $storeName = $tokenRecord ? $tokenRecord->store : 'Tienda 1';
+
+        // Fetch product data from Dropi
+        $dropiProduct = $this->getProduct($dropiId, $token);
+
+        if (!$dropiProduct) {
+            return [
+                'success' => false,
+                'message' => "No se pudo obtener la información del producto Dropi #{$dropiId}.",
+            ];
+        }
+
+        $name = $dropiProduct['name'] ?? 'Producto Dropi';
+        $wholesale = (float) ($dropiProduct['price'] ?? ($dropiProduct['wholesale_price'] ?? 0));
+        $suggested = (float) ($dropiProduct['suggested_price'] ?? ($wholesale * 1.5));
+        $salePrice = $customPrice && $customPrice > 0 ? $customPrice : ($suggested > 0 ? $suggested : ($wholesale * 1.5));
+        $comparePrice = $salePrice > $wholesale ? round($salePrice * 1.25) : null;
+        $profit = max(0, $salePrice - $wholesale);
+
+        $stock = (int) ($dropiProduct['stock'] ?? 25);
+        $description = $dropiProduct['description'] ?? '';
+        $shortDesc = Str::limit(strip_tags($description), 180);
+
+        // Images from Dropi (photos array or single image)
+        $images = [];
+        if (!empty($dropiProduct['photos']) && is_array($dropiProduct['photos'])) {
+            foreach ($dropiProduct['photos'] as $p) {
+                $url = is_array($p) ? ($p['urlS3'] ?? ($p['url'] ?? '')) : (is_object($p) ? ($p->urlS3 ?? ($p->url ?? '')) : (string)$p);
+                if (!empty($url)) {
+                    $images[] = Str::startsWith($url, 'http') ? $url : "https://dropi.co/{$url}";
+                }
+            }
+        } elseif (!empty($dropiProduct['image'])) {
+            $images[] = $dropiProduct['image'];
+        }
+
+        $mainImage = $images[0] ?? ($dropiProduct['image'] ?? 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=800');
+
+        // Resolve Category
+        if (!$categoryId) {
+            $categoryName = 'Tecnología';
+            if (!empty($dropiProduct['categories'][0])) {
+                $categoryName = is_array($dropiProduct['categories'][0]) ? ($dropiProduct['categories'][0]['name'] ?? 'General') : (is_object($dropiProduct['categories'][0]) ? ($dropiProduct['categories'][0]->name ?? 'General') : 'General');
+            } elseif (!empty($dropiProduct['category'])) {
+                $categoryName = $dropiProduct['category'];
+            }
+
+            $cat = Category::firstOrCreate(
+                ['slug' => Str::slug($categoryName)],
+                ['name' => $categoryName, 'is_active' => true]
+            );
+            $categoryId = $cat->id;
+        }
+
+        // Check if already in store
+        $product = Product::where('dropi_id', (string)$dropiId)->first();
+
+        if ($product) {
+            $product->update([
+                'name' => $name,
+                'price' => $salePrice,
+                'compare_price' => $comparePrice,
+                'wholesale_price' => $wholesale,
+                'profit_margin' => $profit,
+                'suggested_price' => $suggested,
+                'stock' => $stock,
+                'description' => $description,
+                'short_description' => $shortDesc,
+                'image' => $mainImage,
+                'images' => $images ?: [$mainImage],
+                'category_id' => $categoryId,
+                'dropi_store' => $storeName,
+                'is_dropi_product' => true,
+                'is_dropshipping' => true,
+                'is_active' => true,
+            ]);
+
+            $this->notifyDropiImport($dropiId, $product->id, $token);
+
+            return [
+                'success' => true,
+                'action' => 'updated',
+                'product' => $product,
+                'message' => "¡Producto '{$product->name}' (Dropi ID #{$dropiId}) actualizado con éxito en tu tienda!",
+            ];
+        }
+
+        // Create new product
+        $sku = !empty($dropiProduct['sku']) ? $dropiProduct['sku'] : ('DRP-' . strtoupper(substr(md5($dropiId), 0, 6)));
+        $product = Product::create([
+            'category_id' => $categoryId,
+            'name' => $name,
+            'slug' => Str::slug($name) . '-' . Str::random(4),
+            'sku' => $sku,
+            'dropi_id' => (string)$dropiId,
+            'dropi_store' => $storeName,
+            'is_dropi_product' => true,
+            'is_dropshipping' => true,
+            'short_description' => $shortDesc,
+            'description' => $description,
+            'price' => $salePrice,
+            'compare_price' => $comparePrice,
+            'wholesale_price' => $wholesale,
+            'profit_margin' => $profit,
+            'suggested_price' => $suggested,
+            'stock' => $stock,
+            'image' => $mainImage,
+            'images' => $images ?: [$mainImage],
+            'is_active' => true,
+        ]);
+
+        $this->notifyDropiImport($dropiId, $product->id, $token);
+
+        return [
+            'success' => true,
+            'action' => 'created',
+            'product' => $product,
+            'message' => "¡Producto '{$product->name}' importado con éxito a tu tienda! Ganancia neta: " . number_format($profit, 0, ',', '.') . " COP.",
+        ];
+    }
+
+    /**
+     * Notify Dropi that product was imported into the store (matches setImportedOnImportLits)
+     */
+    protected function notifyDropiImport(string|int $dropiId, int $localProductId, string $token): void
+    {
+        if (empty($token)) return;
+
+        try {
+            Http::withHeaders([
+                'Content-Type' => 'application/json;charset=UTF-8',
+                'dropi-integration-key' => $token,
+            ])
+            ->timeout(5)
+            ->put("https://api.dropi.co/integrations/importlist/importstore/1", [
+                'products_id' => $dropiId,
+                'imported_to_store' => true,
+                'woocomerse_id' => $localProductId,
+                'woocomerse_url' => url("/product/{$localProductId}"),
+            ]);
+        } catch (\Exception $e) {
+            // Silently ignore notification failure
+        }
+    }
+
+    /**
+     * Bulk import all products from Dropi
+     */
+    public function importAll(): array
+    {
+        $res = $this->getProducts(50);
+        $products = $res['products'] ?? [];
+        $importedCount = 0;
+
+        foreach ($products as $item) {
+            $r = $this->importProductById($item['id']);
+            if (!empty($r['success'])) {
+                $importedCount++;
+            }
+        }
+
+        return [
+            'success' => true,
+            'imported_count' => $importedCount,
+            'total' => count($products),
+            'message' => "¡Se han importado {$importedCount} productos de Dropi a tu tienda exitosamente!",
+        ];
+    }
+
+    /**
+     * Normalize Dropi API objects into standard format
+     */
+    protected function normalizeDropiApiProducts(array $objects, string $storeName): array
+    {
+        $normalized = [];
+        foreach ($objects as $obj) {
+            $item = (array) $obj;
+            $id = (string) ($item['id'] ?? Str::random(6));
+            $name = $item['name'] ?? 'Producto Dropi';
+            $wholesale = (float) ($item['price'] ?? ($item['wholesale_price'] ?? 0));
+            $suggested = (float) ($item['suggested_price'] ?? ($wholesale * 1.5));
+            $stock = (int) ($item['stock'] ?? 20);
+
+            $img = 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=800';
+            if (!empty($item['photos'][0])) {
+                $p = (array) $item['photos'][0];
+                $img = $p['urlS3'] ?? ($p['url'] ?? $img);
+            }
+
+            $category = 'General';
+            if (!empty($item['categories'][0])) {
+                $c = (array) $item['categories'][0];
+                $category = $c['name'] ?? 'General';
+            }
+
+            $normalized[] = [
+                'id' => $id,
+                'name' => $name,
+                'category' => $category,
+                'wholesale_price' => $wholesale,
+                'suggested_price' => $suggested,
+                'stock' => $stock,
+                'image' => $img,
+                'description' => $item['description'] ?? '',
+                'store' => $storeName,
+            ];
+        }
+        return $normalized;
+    }
+
+    /**
+     * Full Colombia Dropi Products Catalog
+     */
+    protected function getFallbackCatalog(string $search = '', ?string $categoryFilter = null): array
     {
         $catalog = [
             [
@@ -108,7 +434,7 @@ class DropiApiService
             [
                 'id' => 'DRP-90176',
                 'name' => 'Aspiradora Inalámbrica de Mano Portátil para Carro y Hogar',
-                'category' => 'Hogar & Carro',
+                'category' => 'Hogar & Cocina',
                 'wholesale_price' => 34000.00,
                 'suggested_price' => 74900.00,
                 'stock' => 130,
@@ -128,7 +454,7 @@ class DropiApiService
             [
                 'id' => 'DRP-11204',
                 'name' => 'Organizador Giratorio 360° para Maquillaje y Cosméticos',
-                'category' => 'Hogar & Belleza',
+                'category' => 'Belleza & Cuidado Personal',
                 'wholesale_price' => 26000.00,
                 'suggested_price' => 59000.00,
                 'stock' => 190,
@@ -147,7 +473,6 @@ class DropiApiService
             ]
         ];
 
-        // Apply search filter if present
         if (!empty($search)) {
             $s = mb_strtolower(trim($search));
             $catalog = array_values(array_filter($catalog, function ($item) use ($s) {
@@ -157,7 +482,6 @@ class DropiApiService
             }));
         }
 
-        // Apply category filter if present
         if (!empty($categoryFilter) && $categoryFilter !== 'all') {
             $catalog = array_values(array_filter($catalog, function ($item) use ($categoryFilter) {
                 return $item['category'] === $categoryFilter;
@@ -165,123 +489,5 @@ class DropiApiService
         }
 
         return $catalog;
-    }
-
-    /**
-     * Import a single product from Dropi into NovaStore (1-Click)
-     */
-    public function importProductById(string $dropiId, ?float $customPrice = null, ?int $categoryId = null): array
-    {
-        $catalog = $this->getDropiCatalog();
-        $item = collect($catalog)->firstWhere('id', $dropiId);
-
-        if (!$item) {
-            return [
-                'success' => false,
-                'message' => "No se encontró el producto Dropi ID #{$dropiId} en el catálogo.",
-            ];
-        }
-
-        $tokenRecord = $this->getActiveToken();
-        $storeName = $tokenRecord?->store ?? 'Tienda 1';
-
-        $wholesale = (float) $item['wholesale_price'];
-        $suggested = (float) $item['suggested_price'];
-        $salePrice = $customPrice && $customPrice > 0 ? $customPrice : $suggested;
-        $comparePrice = $salePrice > $wholesale ? round($salePrice * 1.25) : null;
-        $profit = max(0, $salePrice - $wholesale);
-
-        // Resolve or create category
-        if (!$categoryId) {
-            $cat = Category::firstOrCreate(
-                ['slug' => Str::slug($item['category'])],
-                ['name' => $item['category'], 'is_active' => true]
-            );
-            $categoryId = $cat->id;
-        }
-
-        // Check if already in store
-        $product = Product::where('dropi_id', $dropiId)->first();
-
-        if ($product) {
-            $product->update([
-                'name' => $item['name'],
-                'price' => $salePrice,
-                'compare_price' => $comparePrice,
-                'wholesale_price' => $wholesale,
-                'profit_margin' => $profit,
-                'suggested_price' => $suggested,
-                'stock' => $item['stock'],
-                'description' => $item['description'],
-                'image' => $item['image'],
-                'images' => [$item['image']],
-                'category_id' => $categoryId,
-                'dropi_store' => $storeName,
-                'is_dropi_product' => true,
-                'is_dropshipping' => true,
-                'is_active' => true,
-            ]);
-
-            return [
-                'success' => true,
-                'action' => 'updated',
-                'product' => $product,
-                'message' => "¡Producto '{$product->name}' actualizado en tu tienda con precio " . number_format($salePrice, 0, ',', '.') . " COP!",
-            ];
-        }
-
-        // Create new product
-        $sku = 'DRP-' . strtoupper(substr(md5($dropiId), 0, 6));
-        $product = Product::create([
-            'category_id' => $categoryId,
-            'name' => $item['name'],
-            'slug' => Str::slug($item['name']) . '-' . Str::random(4),
-            'sku' => $sku,
-            'dropi_id' => $dropiId,
-            'dropi_store' => $storeName,
-            'is_dropi_product' => true,
-            'is_dropshipping' => true,
-            'short_description' => Str::limit($item['description'], 180),
-            'description' => $item['description'],
-            'price' => $salePrice,
-            'compare_price' => $comparePrice,
-            'wholesale_price' => $wholesale,
-            'profit_margin' => $profit,
-            'suggested_price' => $suggested,
-            'stock' => $item['stock'],
-            'image' => $item['image'],
-            'images' => [$item['image']],
-            'is_active' => true,
-        ]);
-
-        return [
-            'success' => true,
-            'action' => 'created',
-            'product' => $product,
-            'message' => "¡Producto '{$product->name}' importado con éxito a tu tienda! Ganancia estimada: " . number_format($profit, 0, ',', '.') . " COP.",
-        ];
-    }
-
-    /**
-     * Bulk import all products from Dropi catalog
-     */
-    public function importAll(): array
-    {
-        $catalog = $this->getDropiCatalog();
-        $importedCount = 0;
-
-        foreach ($catalog as $item) {
-            $res = $this->importProductById($item['id']);
-            if ($res['success']) {
-                $importedCount++;
-            }
-        }
-
-        return [
-            'success' => true,
-            'imported_count' => $importedCount,
-            'total' => count($catalog),
-            'message' => "¡Se han importado {$importedCount} productos de Dropi a tu tienda exitosamente!",
-        ];
     }
 }

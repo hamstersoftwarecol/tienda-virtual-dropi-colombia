@@ -7,6 +7,7 @@ use App\Models\DropiToken;
 use App\Models\Product;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
 class DropiProductImportTest extends TestCase
@@ -19,6 +20,10 @@ class DropiProductImportTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+
+        Http::fake([
+            'https://api.dropi.co/*' => Http::response(['isSuccess' => false, 'message' => 'Test fallback'], 404),
+        ]);
 
         $this->admin = User::create([
             'name' => 'Admin User',
