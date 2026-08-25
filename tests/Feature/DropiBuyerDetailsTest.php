@@ -116,6 +116,47 @@ class DropiBuyerDetailsTest extends TestCase
         ]);
     }
 
+    public function test_buyer_details_fetches_real_time_from_dropi_bff_api(): void
+    {
+        \App\Models\DropiToken::create([
+            'store' => 'Tienda Test',
+            'token' => 'header.eyJzdWIiOiIzNjE4NjQiLCJ1c2VyX2lkIjozNjE4NjR9.signature',
+            'is_valid' => true,
+            'user_id_dropi' => '361864',
+        ]);
+
+        \Illuminate\Support\Facades\Http::fake([
+            'https://api-v2.dropi.co/bff/customers/fingerprint/v2*' => \Illuminate\Support\Facades\Http::response([
+                'isSuccess' => true,
+                'data' => [
+                    'buyer_type' => 'Comprador Frecuente',
+                    'score' => 'Riesgosa',
+                    'total_orders' => 11,
+                    'delivered_orders' => 0,
+                    'returns_orders' => 11,
+                    'in_transit_orders' => 0,
+                    'in_other_stores_orders' => 11,
+                    'carriers_breakdown' => [
+                        ['name' => 'ENVIA', 'in_transit' => 0, 'returns' => 6, 'delivered' => 0],
+                        ['name' => 'INTERRAPIDISIMO', 'in_transit' => 0, 'returns' => 3, 'delivered' => 0],
+                    ],
+                ]
+            ], 200),
+        ]);
+
+        $response = $this->actingAs($this->admin)->getJson('/admin/customers/buyer-details?phone=3208901234');
+
+        $response->assertStatus(200);
+        $response->assertJson([
+            'success' => true,
+            'has_history' => true,
+            'phone' => '3208901234',
+            'buyer_type' => 'Comprador Frecuente',
+            'delivery_probability' => 'Riesgosa',
+            'returns_count' => 11,
+        ]);
+    }
+
     public function test_buyer_details_validates_phone_number(): void
     {
         $response = $this->actingAs($this->admin)->getJson('/admin/customers/buyer-details?phone=123');

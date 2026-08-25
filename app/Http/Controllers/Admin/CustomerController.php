@@ -95,12 +95,15 @@ class CustomerController extends Controller
             }
         })->latest()->get();
 
-        // 1. Query Dropi API in real-time
+        // 1. Query Dropi API in real-time (Official BFF endpoint: https://api-v2.dropi.co/bff/customers/fingerprint/v2)
         $dropiService = app(\App\Services\DropiApiService::class);
         $dropiData = $dropiService->getBuyerDetails($nationalPhone);
 
-        if (!empty($dropiData) && is_array($dropiData) && !empty($dropiData['has_history'])) {
-            return response()->json($dropiData);
+        if (!empty($dropiData) && is_array($dropiData)) {
+            // If Dropi API returned positive/negative metrics from real API
+            if (!empty($dropiData['has_history'])) {
+                return response()->json($dropiData);
+            }
         }
 
         // 2. Reference & test numbers configuration

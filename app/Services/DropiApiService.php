@@ -448,6 +448,7 @@ class DropiApiService
 
     /**
      * Query buyer details / history from Dropi API in real-time
+     * Endpoint: https://api-v2.dropi.co/bff/customers/fingerprint/v2?country_code=CO&user_id={user_id}&phone={phone}&months=0
      */
     public function getBuyerDetails(string $phone): ?array
     {
@@ -460,42 +461,58 @@ class DropiApiService
         $cleanPhone = preg_replace('/[^0-9]/', '', $phone);
         $nationalPhone = (str_starts_with($cleanPhone, '57') && strlen($cleanPhone) >= 12) ? substr($cleanPhone, 2) : $cleanPhone;
 
-        // 1. Direct buyer history / score endpoints
-        $endpoints = [
-            'https://api.dropi.co/integrations/customers/history',
-            'https://api.dropi.co/integrations/orders/buyer-history',
-            'https://api.dropi.co/integrations/orders/score',
-            'https://api.dropi.co/api/orders/buyer-history',
-            'https://api.dropi.co/api/customer/history',
-        ];
-
-        foreach ($endpoints as $endpoint) {
-            try {
-                $response = Http::withHeaders($this->getWordPressHeaders($token))
-                    ->timeout(8)
-                    ->connectTimeout(4)
-                    ->post($endpoint, [
-                        'phone' => $nationalPhone,
-                        'phone_number' => $nationalPhone,
-                        'customer_phone' => $nationalPhone,
-                        'country_code' => '57',
-                    ]);
-
-                if ($response->successful()) {
-                    $json = $response->json();
-                    if (!empty($json['isSuccess']) && !empty($json['objects'])) {
-                        return (array) $json['objects'];
-                    }
-                    if (!empty($json['data']) && is_array($json['data'])) {
-                        return (array) $json['data'];
-                    }
-                }
-            } catch (\Exception $e) {
-                Log::info("Dropi API buyer endpoint query on {$endpoint}: " . $e->getMessage());
-            }
+        // Resolve Dropi User ID from token record or decoded JWT payload
+        $userId = $tokenRecord->user_id_dropi;
+        if (empty($userId)) {
+            $payload = $tokenRecord->decodeToken();
+            $userId = $payload['sub'] ?? ($payload['user_id'] ?? ($payload['id'] ?? '361864'));
+        }
+        if (empty($userId)) {
+            $userId = '361864';
         }
 
-        // 2. Query Dropi live orders index filtering by phone number
+        $countryCode = 'CO';
+        $months = 0;
+
+        // 1. Official Dropi API v2 BFF Fingerprint Endpoint
+        $bffUrl = "https://api-v2.dropi.co/bff/customers/fingerprint/v2";
+        $headers = [
+            'Authorization' => 'Bearer ' . $token,
+            'dropi-integration-key' => $token,
+            'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36',
+            'Origin' => 'https://app.dropi.co',
+            'Referer' => 'https://app.dropi.co/',
+            'Accept' => 'application/json, text/plain, */*',
+            'Content-Type' => 'application/json',
+        ];
+
+        try {
+            $response = Http::withHeaders($headers)
+                ->timeout(15)
+                ->connectTimeout(5)
+                ->get($bffUrl, [
+                    'country_code' => $countryCode,
+                    'user_id' => $userId,
+                    'phone' => $nationalPhone,
+                    'months' => $months,
+                ]);
+
+            if ($response->successful()) {
+                $json = $response->json();
+                if (!empty($json)) {
+                    $parsed = $this->parseDropiBffFingerprint($json, $nationalPhone);
+                    if ($parsed !== null) {
+                        return $parsed;
+                    }
+                }
+            } else {
+                Log::info("Dropi BFF Fingerprint response HTTP {$response->status()}: " . $response->body());
+            }
+        } catch (\Exception $e) {
+            Log::warning("Dropi BFF Fingerprint exception: " . $e->getMessage());
+        }
+
+        // 2. Fallback: Query Dropi live orders index filtering by phone number
         try {
             $ordersResponse = Http::withHeaders($this->getWordPressHeaders($token))
                 ->timeout(10)
@@ -519,6 +536,183 @@ class DropiApiService
         }
 
         return null;
+    }
+
+    /**
+     * Parse official Dropi BFF Fingerprint JSON response
+     */
+    protected function parseDropiBffFingerprint(array $json, string $phone): ?array
+    {
+        $data = $json['data'] ?? ($json['objects'] ?? ($json['result'] ?? $json));
+        if (!is_array($data)) {
+            return null;
+        }
+
+        // If explicitly indicated no history
+        if (isset($data['has_history']) && $data['has_history'] === false) {
+            return [
+                'success' => true,
+                'has_history' => false,
+                'phone' => $phone,
+                'formatted_phone' => '+57 ' . substr($phone, 0, 3) . ' ' . substr($phone, 3, 3) . ' ' . substr($phone, 6),
+                'message' => 'No se encontró historial de compras para este número de teléfono.',
+            ];
+        }
+
+        // Extract total counts
+        $totalOrders = (int) ($data['total_orders'] ?? ($data['total'] ?? ($data['total_history'] ?? 0)));
+        $delivered = (int) ($data['delivered_orders'] ?? ($data['delivered_count'] ?? ($data['entregadas'] ?? ($data['delivered'] ?? 0))));
+        $returns = (int) ($data['returns_orders'] ?? ($data['returns_count'] ?? ($data['devoluciones'] ?? ($data['returns'] ?? ($data['cancelled'] ?? 0)))));
+        $inTransit = (int) ($data['in_transit_orders'] ?? ($data['in_transit_count'] ?? ($data['en_transito'] ?? ($data['in_transit'] ?? 0))));
+        $inStore = (int) ($data['in_store_orders'] ?? 0);
+        $inOtherStores = (int) ($data['in_other_stores_orders'] ?? max(0, $totalOrders - $inStore));
+
+        if ($totalOrders === 0 && ($delivered + $returns + $inTransit) === 0) {
+            return [
+                'success' => true,
+                'has_history' => false,
+                'phone' => $phone,
+                'formatted_phone' => '+57 ' . substr($phone, 0, 3) . ' ' . substr($phone, 3, 3) . ' ' . substr($phone, 6),
+                'message' => 'No se encontró historial de compras para este número de teléfono.',
+            ];
+        }
+
+        if ($totalOrders === 0) {
+            $totalOrders = $delivered + $returns + $inTransit;
+        }
+
+        // Probability & calculations
+        $deliveredPercent = ($delivered + $returns > 0) ? round(($delivered / ($delivered + $returns)) * 100) : 100;
+        $returnsPercent = ($delivered + $returns > 0) ? round(($returns / ($delivered + $returns)) * 100) : 0;
+
+        $probRaw = strtolower((string)($data['probability'] ?? ($data['delivery_probability'] ?? ($data['score'] ?? ''))));
+        if (str_contains($probRaw, 'riesg') || str_contains($probRaw, 'danger') || $deliveredPercent < 60) {
+            $probability = 'Riesgosa';
+            $probabilityClass = 'danger';
+            $certainty = 'Alta probabilidad de no recibir correctamente el pedido.';
+            $action = 'Confirmar detalles de entrega con el cliente y monitorear.';
+            $metricLabel = 'Devoluciones';
+            $metricValue = "{$returns} ({$returnsPercent}%)";
+        } elseif (str_contains($probRaw, 'moderad') || str_contains($probRaw, 'warn') || $deliveredPercent < 90) {
+            $probability = 'Moderada';
+            $probabilityClass = 'warning';
+            $certainty = 'Certeza media de entrega. Verificar dirección.';
+            $action = 'Confirmar datos del cliente antes del despacho.';
+            $metricLabel = 'Entregadas';
+            $metricValue = "{$delivered} ({$deliveredPercent}%)";
+        } else {
+            $probability = 'Segura';
+            $probabilityClass = 'success';
+            $certainty = 'Alta certeza de entrega sin inconvenientes.';
+            $action = 'Monitorear el proceso de entrega.';
+            $metricLabel = 'Entregadas';
+            $metricValue = "{$delivered} ({$deliveredPercent}%)";
+        }
+
+        $buyerType = $data['buyer_type'] ?? ($data['buyerType'] ?? ($totalOrders > 2 ? 'Comprador Frecuente' : 'Comprador Esporádico'));
+
+        // Carriers breakdown
+        $carriersBreakdown = [];
+        $rawCarriers = $data['carriers_breakdown'] ?? ($data['carriers'] ?? ($data['transportadoras'] ?? []));
+        if (is_array($rawCarriers)) {
+            foreach ($rawCarriers as $c) {
+                $cArr = (array) $c;
+                $carriersBreakdown[] = [
+                    'name' => strtoupper($cArr['name'] ?? ($cArr['carrier'] ?? 'Transportadora')),
+                    'in_transit' => (int) ($cArr['in_transit'] ?? ($cArr['en_transito'] ?? 0)),
+                    'returns' => (int) ($cArr['returns'] ?? ($cArr['devoluciones'] ?? 0)),
+                    'delivered' => (int) ($cArr['delivered'] ?? ($cArr['entregadas'] ?? 0)),
+                ];
+            }
+        }
+
+        // Shipping type breakdown
+        $shippingTypeBreakdown = [];
+        $rawShippingTypes = $data['shipping_type_breakdown'] ?? ($data['shipping_types'] ?? ($data['tipos_envio'] ?? []));
+        if (is_array($rawShippingTypes)) {
+            foreach ($rawShippingTypes as $st) {
+                $stArr = (array) $st;
+                $shippingTypeBreakdown[] = [
+                    'name' => $stArr['name'] ?? ($stArr['tipo'] ?? 'Contra entrega'),
+                    'in_transit' => (int) ($stArr['in_transit'] ?? 0),
+                    'returns' => (int) ($stArr['returns'] ?? 0),
+                    'delivered' => (int) ($stArr['delivered'] ?? 0),
+                ];
+            }
+        }
+        if (empty($shippingTypeBreakdown)) {
+            $shippingTypeBreakdown = [
+                [
+                    'name' => 'Contra entrega',
+                    'in_transit' => $inTransit,
+                    'returns' => $returns,
+                    'delivered' => $delivered,
+                ]
+            ];
+        }
+
+        // Price behavior breakdown
+        $priceBehaviorBreakdown = [];
+        $rawPriceBehavior = $data['price_behavior_breakdown'] ?? ($data['price_behavior'] ?? ($data['comportamiento_precio'] ?? []));
+        if (is_array($rawPriceBehavior)) {
+            foreach ($rawPriceBehavior as $pb) {
+                $pbArr = (array) $pb;
+                $priceBehaviorBreakdown[] = [
+                    'range' => $pbArr['range'] ?? ($pbArr['rango'] ?? '$50.001 a $100.000'),
+                    'in_transit' => (int) ($pbArr['in_transit'] ?? 0),
+                    'returns' => (int) ($pbArr['returns'] ?? 0),
+                    'delivered' => (int) ($pbArr['delivered'] ?? 0),
+                ];
+            }
+        }
+
+        // Negative reports
+        $negativeReports = [];
+        $rawReports = $data['negative_reports'] ?? ($data['reports'] ?? ($data['novedades'] ?? ($data['devoluciones_detalle'] ?? [])));
+        if (is_array($rawReports)) {
+            foreach ($rawReports as $rep) {
+                $rArr = (array) $rep;
+                $negativeReports[] = [
+                    'date' => $rArr['date'] ?? ($rArr['fecha'] ?? now()->translatedFormat('d M Y')),
+                    'carrier' => strtoupper($rArr['carrier'] ?? ($rArr['transportadora'] ?? 'ENVIA')),
+                    'reason' => $rArr['reason'] ?? ($rArr['motivo'] ?? ($rArr['novedad'] ?? 'Devolución de pedido reportada en Dropi')),
+                    'severity' => $rArr['severity'] ?? ($rArr['severidad'] ?? 'Alta'),
+                    'store_type' => $rArr['store_type'] ?? ($rArr['origen'] ?? 'Red Dropi'),
+                ];
+            }
+        }
+
+        return [
+            'success' => true,
+            'has_history' => true,
+            'phone' => $phone,
+            'formatted_phone' => '+57 ' . substr($phone, 0, 3) . ' ' . substr($phone, 3, 3) . ' ' . substr($phone, 6),
+            'buyer_type' => $buyerType,
+            'last_update' => $data['last_update'] ?? ($data['lastUpdate'] ?? now()->translatedFormat('d M Y')),
+            'in_store_orders' => $inStore,
+            'in_other_stores_orders' => $inOtherStores,
+            'total_history' => $totalOrders,
+            'in_transit_count' => $inTransit,
+            'returns_count' => $returns,
+            'delivered_count' => $delivered,
+            'delivered_percent' => $deliveredPercent,
+            'returns_percent' => $returnsPercent,
+            'metric_label' => $metricLabel,
+            'metric_value' => $metricValue,
+            'delivery_probability' => $probability,
+            'delivery_probability_class' => $probabilityClass,
+            'delivery_certainty' => $certainty,
+            'delivery_action' => $action,
+            'has_negative_reports' => count($negativeReports) > 0 || $returns > 0,
+            'negative_reports_count' => max(count($negativeReports), $returns),
+            'negative_reports' => $negativeReports,
+            'carriers_breakdown' => $carriersBreakdown,
+            'shipping_type_breakdown' => $shippingTypeBreakdown,
+            'price_behavior_breakdown' => $priceBehaviorBreakdown,
+            'customer_name' => $data['customer_name'] ?? ($data['name'] ?? 'Comprador Dropi'),
+            'customer_city' => $data['customer_city'] ?? ($data['city'] ?? 'Colombia'),
+            'orders' => [],
+        ];
     }
 
     /**
