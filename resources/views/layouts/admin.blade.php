@@ -51,7 +51,10 @@
                     <i class="bi bi-people"></i> Clientes & Compradores
                 </a>
 
-                <div class="text-muted small text-uppercase fw-bold px-3 mt-3 mb-1" style="font-size: 0.68rem; letter-spacing: 0.5px;">Ajustes & Marketing</div>
+                <div class="text-muted small text-uppercase fw-bold px-3 mt-3 mb-1" style="font-size: 0.68rem; letter-spacing: 0.5px;">Ajustes & Integraciones</div>
+                <a class="nav-link {{ request()->routeIs('admin.dropi.settings*') ? 'active' : '' }}" href="{{ route('admin.dropi.settings') }}">
+                    <i class="bi bi-gear-wide-connected text-warning"></i> Configuración Dropi
+                </a>
                 <a class="nav-link {{ request()->routeIs('admin.coupons.*') ? 'active' : '' }}" href="{{ route('admin.coupons.index') }}">
                     <i class="bi bi-ticket-perforated"></i> Cupones de Descuento
                 </a>
@@ -144,6 +147,9 @@
                         </a>
                         <a class="nav-link {{ request()->routeIs('admin.customers.*') ? 'active' : '' }}" href="{{ route('admin.customers.index') }}">
                             <i class="bi bi-people"></i> Clientes
+                        </a>
+                        <a class="nav-link {{ request()->routeIs('admin.dropi.settings*') ? 'active' : '' }}" href="{{ route('admin.dropi.settings') }}">
+                            <i class="bi bi-gear-wide-connected text-warning"></i> Configuración Dropi
                         </a>
                         <a class="nav-link {{ request()->routeIs('admin.coupons.*') ? 'active' : '' }}" href="{{ route('admin.coupons.index') }}">
                             <i class="bi bi-ticket-perforated"></i> Cupones

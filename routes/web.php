@@ -4,6 +4,7 @@ use App\Http\Controllers\Admin\CategoryController as AdminCategoryController;
 use App\Http\Controllers\Admin\CouponController as AdminCouponController;
 use App\Http\Controllers\Admin\CustomerController as AdminCustomerController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
+use App\Http\Controllers\Admin\DropiSettingController as AdminDropiSettingController;
 use App\Http\Controllers\Admin\ManualOrderController as AdminManualOrderController;
 use App\Http\Controllers\Admin\OrderController as AdminOrderController;
 use App\Http\Controllers\Admin\ProductController as AdminProductController;
@@ -86,6 +87,12 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/coupons', [AdminCouponController::class, 'index'])->name('coupons.index');
     Route::post('/coupons', [AdminCouponController::class, 'store'])->name('coupons.store');
     Route::delete('/coupons/{coupon}', [AdminCouponController::class, 'destroy'])->name('coupons.destroy');
+
+    // Dropi Settings & Token Validation
+    Route::get('/dropi/settings', [AdminDropiSettingController::class, 'index'])->name('dropi.settings');
+    Route::post('/dropi/settings', [AdminDropiSettingController::class, 'store'])->name('dropi.settings.store');
+    Route::post('/dropi/settings/validate', [AdminDropiSettingController::class, 'validateToken'])->name('dropi.settings.validate');
+    Route::delete('/dropi/settings/{dropiToken}', [AdminDropiSettingController::class, 'destroy'])->name('dropi.settings.destroy');
 });
 
 // Breeze Auth Routes
