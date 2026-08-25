@@ -23,19 +23,19 @@ class DropiProductController extends Controller
         $dropiToken = DropiToken::where('is_valid', true)->latest()->first() ?: DropiToken::latest()->first();
         $categories = Category::active()->get();
         $search = $request->input('search', '');
+        $selectedCategory = $request->input('category', 'all');
 
-        // Fetch products from Dropi API
-        $apiResult = $this->dropiApi->fetchDropiProducts($search, (int) $request->input('page', 1));
-        $dropiProducts = $apiResult['products'] ?? [];
-        $apiMessage = $apiResult['message'] ?? '';
-        $apiSuccess = $apiResult['success'] ?? false;
+        // Fetch Dropi products catalog
+        $dropiProducts = $this->dropiApi->getDropiCatalog($search, $selectedCategory);
 
         // Local imported products
-        $importedDropiIds = Product::whereNotNull('dropi_id')
-            ->pluck('dropi_id')
+        $importedProducts = Product::whereNotNull('dropi_id')
+            ->pluck('name', 'dropi_id')
             ->toArray();
 
+        $importedDropiIds = array_keys($importedProducts);
         $importedCount = count($importedDropiIds);
+        $totalDropiProducts = count($dropiProducts);
 
         return view('admin.dropi.products', compact(
             'dropiToken',
@@ -43,22 +43,28 @@ class DropiProductController extends Controller
             'dropiProducts',
             'importedDropiIds',
             'importedCount',
+            'totalDropiProducts',
             'search',
-            'apiMessage',
-            'apiSuccess'
+            'selectedCategory'
         ));
     }
 
     public function import(Request $request)
     {
         $request->validate([
-            'product' => 'required',
-            'product_name' => 'required|string|max:255',
-            'product_price' => 'required|numeric|min:0',
+            'dropi_id' => 'required|string',
+            'custom_price' => 'nullable|numeric|min:0',
             'category_id' => 'nullable|exists:categories,id',
         ]);
 
-        $result = $this->dropiApi->importProduct($request->all());
+        $customPrice = $request->filled('custom_price') ? (float) $request->custom_price : null;
+        $categoryId = $request->filled('category_id') ? (int) $request->category_id : null;
+
+        $result = $this->dropiApi->importProductById(
+            $request->dropi_id,
+            $customPrice,
+            $categoryId
+        );
 
         if ($request->wantsJson() || $request->ajax()) {
             return response()->json($result);
@@ -69,5 +75,11 @@ class DropiProductController extends Controller
         }
 
         return back()->with('error', $result['message']);
+    }
+
+    public function importAll(Request $request)
+    {
+        $result = $this->dropiApi->importAll();
+        return back()->with('success', $result['message']);
     }
 }

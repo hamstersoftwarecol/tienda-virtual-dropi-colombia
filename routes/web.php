@@ -92,6 +92,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     // Dropi Products & Importer
     Route::get('/dropi/products', [AdminDropiProductController::class, 'index'])->name('dropi.products.index');
     Route::post('/dropi/products/import', [AdminDropiProductController::class, 'import'])->name('dropi.products.import');
+    Route::post('/dropi/products/import-all', [AdminDropiProductController::class, 'importAll'])->name('dropi.products.import_all');
 
     // Dropi Settings & Token Validation
     Route::get('/dropi/settings', [AdminDropiSettingController::class, 'index'])->name('dropi.settings');
