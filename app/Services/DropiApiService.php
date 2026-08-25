@@ -47,7 +47,7 @@ class DropiApiService
      * (POST https://api.dropi.co/integrations/products/index)
      */
     public function getProducts(
-        int $perPage = 24,
+        int $perPage = 32,
         int $currentPage = 0,
         string $search = '',
         string $orderBy = 'id',
@@ -79,6 +79,9 @@ class DropiApiService
             'active' => true,
             'no_count' => true,
             'integration' => true,
+            'userVerified' => true,
+            'stockmayor' => 1,
+            'notNulldescription' => true,
             'get_stock' => false,
         ];
 
@@ -205,23 +208,22 @@ class DropiApiService
         $description = $dropiProduct['description'] ?? '';
         $shortDesc = Str::limit(strip_tags($description), 180);
 
-        // Images handling
+        // Images handling (CloudFront CDN)
         $images = [];
-        if (!empty($dropiProduct['photos']) && is_array($dropiProduct['photos'])) {
-            foreach ($dropiProduct['photos'] as $p) {
-                $url = is_array($p) ? ($p['urlS3'] ?? ($p['url'] ?? '')) : (is_object($p) ? ($p->urlS3 ?? ($p->url ?? '')) : (string)$p);
-                if (!empty($url)) {
-                    $images[] = Str::startsWith($url, 'http') ? $url : "https://dropi.co/{$url}";
-                }
+        $photoList = !empty($dropiProduct['photos']) ? $dropiProduct['photos'] : (!empty($dropiProduct['gallery']) ? $dropiProduct['gallery'] : []);
+        
+        foreach ($photoList as $p) {
+            $urlS3 = is_array($p) ? ($p['urlS3'] ?? '') : (is_object($p) ? ($p->urlS3 ?? '') : '');
+            $urlDirect = is_array($p) ? ($p['url'] ?? '') : (is_object($p) ? ($p->url ?? '') : (is_string($p) ? $p : ''));
+
+            if (!empty($urlS3)) {
+                $images[] = Str::startsWith($urlS3, 'http') ? $urlS3 : "https://d39ru7awumhhs2.cloudfront.net/" . ltrim($urlS3, '/');
+            } elseif (!empty($urlDirect)) {
+                $images[] = Str::startsWith($urlDirect, 'http') ? $urlDirect : "https://api.dropi.co/" . ltrim($urlDirect, '/');
             }
-        } elseif (!empty($dropiProduct['gallery']) && is_array($dropiProduct['gallery'])) {
-            foreach ($dropiProduct['gallery'] as $p) {
-                $url = is_array($p) ? ($p['urlS3'] ?? ($p['url'] ?? '')) : (is_object($p) ? ($p->urlS3 ?? ($p->url ?? '')) : (string)$p);
-                if (!empty($url)) {
-                    $images[] = Str::startsWith($url, 'http') ? $url : "https://dropi.co/{$url}";
-                }
-            }
-        } elseif (!empty($dropiProduct['image'])) {
+        }
+
+        if (empty($images) && !empty($dropiProduct['image'])) {
             $images[] = $dropiProduct['image'];
         }
 
@@ -372,6 +374,11 @@ class DropiApiService
             $name = $item['name'] ?? 'Producto Dropi';
             $wholesale = (float) ($item['sale_price'] ?? ($item['price'] ?? ($item['wholesale_price'] ?? 0)));
             $suggested = (float) ($item['suggested_price'] ?? ($wholesale * 1.5));
+
+            // Skip invalid or incomplete draft products
+            if ($wholesale <= 0) {
+                continue;
+            }
             
             // Stock calculation from warehouse_product
             $stock = 20;
@@ -387,25 +394,35 @@ class DropiApiService
                 $stock = (int) $item['stock'];
             }
 
-            // Image resolution
-            $img = 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=800';
-            if (!empty($item['photos']) && is_array($item['photos'])) {
-                $p = (array) $item['photos'][0];
-                $img = $p['urlS3'] ?? ($p['url'] ?? $img);
-            } elseif (!empty($item['gallery']) && is_array($item['gallery'])) {
-                $p = (array) $item['gallery'][0];
-                $img = $p['urlS3'] ?? ($p['url'] ?? $img);
+            // Image resolution from CloudFront CDN
+            $img = '';
+            $photoList = !empty($item['gallery']) ? $item['gallery'] : (!empty($item['photos']) ? $item['photos'] : []);
+            foreach ($photoList as $p) {
+                $urlS3 = is_array($p) ? ($p['urlS3'] ?? '') : (is_object($p) ? ($p->urlS3 ?? '') : '');
+                $urlDirect = is_array($p) ? ($p['url'] ?? '') : (is_object($p) ? ($p->url ?? '') : (is_string($p) ? $p : ''));
+
+                if (!empty($urlS3)) {
+                    $img = Str::startsWith($urlS3, 'http') ? $urlS3 : "https://d39ru7awumhhs2.cloudfront.net/" . ltrim($urlS3, '/');
+                    break;
+                } elseif (!empty($urlDirect)) {
+                    $img = Str::startsWith($urlDirect, 'http') ? $urlDirect : "https://api.dropi.co/" . ltrim($urlDirect, '/');
+                    break;
+                }
             }
 
-            if (!Str::startsWith($img, 'http')) {
-                $img = "https://dropi.co/{$img}";
+            if (empty($img)) {
+                $img = 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=800';
             }
 
             // Category resolution
             $category = 'General';
             if (!empty($item['categories']) && is_array($item['categories'])) {
-                $c = (array) $item['categories'][0];
-                $category = $c['name'] ?? 'General';
+                $firstCat = $item['categories'][0] ?? null;
+                if (is_array($firstCat) && !empty($firstCat['name'])) {
+                    $category = $firstCat['name'];
+                } elseif (is_object($firstCat) && !empty($firstCat->name)) {
+                    $category = $firstCat->name;
+                }
             }
 
             $normalized[] = [
