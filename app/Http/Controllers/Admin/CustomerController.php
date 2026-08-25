@@ -95,16 +95,20 @@ class CustomerController extends Controller
             }
         })->latest()->get();
 
-        // 1. Try real Dropi API query if token is present
+        // 1. Query Dropi API in real-time
         $dropiService = app(\App\Services\DropiApiService::class);
         $dropiData = $dropiService->getBuyerDetails($nationalPhone);
 
-        // Test numbers configuration
+        if (!empty($dropiData) && is_array($dropiData) && !empty($dropiData['has_history'])) {
+            return response()->json($dropiData);
+        }
+
+        // 2. Reference & test numbers configuration
         $negativeReportPhones = ['3114567890', '3001234567', '3006667788'];
         $knownSafeDropiBuyers = ['3103761814'];
         $knownDropiBuyers = array_merge($knownSafeDropiBuyers, $negativeReportPhones);
 
-        $hasHistory = ($orders->count() > 0) || !empty($dropiData) || in_array($nationalPhone, $knownDropiBuyers);
+        $hasHistory = ($orders->count() > 0) || in_array($nationalPhone, $knownDropiBuyers);
 
         if (!$hasHistory) {
             return response()->json([
