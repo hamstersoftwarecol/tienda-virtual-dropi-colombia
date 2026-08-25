@@ -585,6 +585,11 @@ class DropiApiService
             return null;
         }
 
+        // If the BFF endpoint returned a list/array of orders directly
+        if (array_is_list($data) && count($data) > 0 && isset($data[0]['status'])) {
+            return $this->aggregateDropiOrders($data, $phone);
+        }
+
         // If explicitly indicated no history
         if (isset($data['has_history']) && $data['has_history'] === false) {
             return [
