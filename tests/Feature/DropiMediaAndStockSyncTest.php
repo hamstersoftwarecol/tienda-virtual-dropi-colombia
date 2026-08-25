@@ -109,4 +109,52 @@ class DropiMediaAndStockSyncTest extends TestCase
         $response->assertRedirect();
         $response->assertSessionHas('success');
     }
+
+    public function test_handles_duplicate_sku_during_import(): void
+    {
+        $category = Category::create(['name' => 'Tecnología', 'slug' => 'tecnologia', 'is_active' => true]);
+
+        // Pre-create product with SKU "Tecnologia"
+        Product::create([
+            'category_id' => $category->id,
+            'name' => 'Producto Previo',
+            'slug' => 'producto-previo',
+            'sku' => 'Tecnologia',
+            'price' => 50000,
+            'stock' => 10,
+            'is_active' => true,
+        ]);
+
+        DropiToken::create([
+            'token' => 'fake_token',
+            'store' => 'tienda.hamstersoftware.com',
+            'is_valid' => true,
+        ]);
+
+        // Fake Dropi returning a product with the same SKU "Tecnologia"
+        Http::fake([
+            'https://api.dropi.co/integrations/products/v2/2109796' => Http::response([
+                'isSuccess' => true,
+                'objects' => [
+                    'id' => 2109796,
+                    'name' => 'reloj T500 smart',
+                    'sku' => 'Tecnologia',
+                    'sale_price' => 22000,
+                    'suggested_price' => 25000,
+                    'stock' => 98,
+                ]
+            ], 200),
+        ]);
+
+        $service = app(DropiApiService::class);
+        $result = $service->importProductById(2109796);
+
+        $this->assertTrue($result['success']);
+        $this->assertEquals('created', $result['action']);
+
+        $imported = Product::where('dropi_id', '2109796')->first();
+        $this->assertNotNull($imported);
+        $this->assertNotEquals('Tecnologia', $imported->sku);
+        $this->assertStringStartsWith('Tecnologia-', $imported->sku);
+    }
 }

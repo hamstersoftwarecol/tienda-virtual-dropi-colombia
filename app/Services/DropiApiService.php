@@ -338,12 +338,33 @@ class DropiApiService
             ];
         }
 
-        // Create new product
-        $sku = !empty($dropiProduct['sku']) ? $dropiProduct['sku'] : ('DRP-' . strtoupper(substr(md5($dropiId), 0, 6)));
+        // Resolve Unique SKU
+        $baseSku = !empty($dropiProduct['sku']) && strlen(trim((string)$dropiProduct['sku'])) > 0
+            ? trim((string)$dropiProduct['sku'])
+            : ('DRP-' . strtoupper(substr(md5($dropiId), 0, 6)));
+
+        $sku = $baseSku;
+        $counter = 1;
+        while (Product::where('sku', $sku)->exists()) {
+            $sku = "{$baseSku}-" . strtoupper(Str::random(4));
+            $counter++;
+            if ($counter > 10) {
+                $sku = "DRP-{$dropiId}-" . strtoupper(Str::random(6));
+                break;
+            }
+        }
+
+        // Resolve Unique Slug
+        $baseSlug = Str::slug($name) ?: ('producto-' . $dropiId);
+        $slug = $baseSlug . '-' . Str::random(4);
+        while (Product::where('slug', $slug)->exists()) {
+            $slug = $baseSlug . '-' . Str::random(6);
+        }
+
         $product = Product::create([
             'category_id' => $categoryId,
             'name' => $name,
-            'slug' => Str::slug($name) . '-' . Str::random(4),
+            'slug' => $slug,
             'sku' => $sku,
             'dropi_id' => (string)$dropiId,
             'dropi_store' => $storeName,
