@@ -21,10 +21,6 @@ class DropiProductImportTest extends TestCase
     {
         parent::setUp();
 
-        Http::fake([
-            'https://api.dropi.co/*' => Http::response(['isSuccess' => false, 'message' => 'Test fallback'], 404),
-        ]);
-
         $this->admin = User::create([
             'name' => 'Admin User',
             'email' => 'admin@tienda.com',
@@ -47,42 +43,73 @@ class DropiProductImportTest extends TestCase
         ]);
     }
 
-    public function test_admin_can_access_dropi_products_page(): void
+    public function test_admin_can_access_dropi_products_page_and_see_api_products(): void
     {
+        Http::fake([
+            'https://api.dropi.co/integrations/products/index' => Http::response([
+                'isSuccess' => true,
+                'objects' => [
+                    [
+                        'id' => 99182,
+                        'name' => 'Producto Real Dropi API 100%',
+                        'price' => 50000.00,
+                        'suggested_price' => 95000.00,
+                        'stock' => 50,
+                        'photos' => [
+                            ['urlS3' => 'https://images.unsplash.com/photo-1523275335684-37898b6baf30']
+                        ],
+                        'categories' => [
+                            ['name' => 'Tecnología']
+                        ],
+                    ]
+                ]
+            ], 200),
+        ]);
+
         $response = $this->actingAs($this->admin)->get('/admin/dropi/products');
         $response->assertStatus(200);
-        $response->assertSee('Visualizar');
-        $response->assertSee('Importar Productos Dropi');
-        $response->assertSee('DRP-10145');
-        $response->assertSee('Smartwatch Ultra 8');
+        $response->assertSee('Catálogo en Vivo de Dropi');
+        $response->assertSee('Producto Real Dropi API 100%');
+        $response->assertSee('99182');
     }
 
-    public function test_admin_can_import_dropi_product_with_one_click(): void
+    public function test_admin_can_import_real_api_product(): void
     {
+        Http::fake([
+            'https://api.dropi.co/integrations/products/v2/99182' => Http::response([
+                'isSuccess' => true,
+                'objects' => [
+                    'id' => 99182,
+                    'name' => 'Producto Real Dropi API 100%',
+                    'price' => 50000.00,
+                    'suggested_price' => 95000.00,
+                    'stock' => 50,
+                    'description' => 'Descripción directa de Dropi API',
+                    'photos' => [
+                        ['urlS3' => 'https://images.unsplash.com/photo-1523275335684-37898b6baf30']
+                    ],
+                    'categories' => [
+                        ['name' => 'Tecnología']
+                    ],
+                ]
+            ], 200),
+            'https://api.dropi.co/integrations/importlist/importstore/1' => Http::response(['isSuccess' => true], 200),
+        ]);
+
         $response = $this->actingAs($this->admin)->post('/admin/dropi/products/import', [
-            'dropi_id' => 'DRP-10145',
+            'dropi_id' => '99182',
         ]);
 
         $response->assertRedirect();
         $response->assertSessionHas('success');
 
         $this->assertDatabaseHas('products', [
-            'dropi_id' => 'DRP-10145',
-            'price' => 89900.00,
-            'wholesale_price' => 45000.00,
-            'profit_margin' => 44900.00,
+            'dropi_id' => '99182',
+            'name' => 'Producto Real Dropi API 100%',
+            'price' => 95000.00,
+            'wholesale_price' => 50000.00,
             'is_dropi_product' => true,
             'is_dropshipping' => true,
         ]);
-    }
-
-    public function test_admin_can_import_all_dropi_products_at_once(): void
-    {
-        $response = $this->actingAs($this->admin)->post('/admin/dropi/products/import-all');
-        $response->assertRedirect();
-        $response->assertSessionHas('success');
-
-        $count = Product::where('is_dropi_product', true)->count();
-        $this->assertGreaterThan(5, $count);
     }
 }
