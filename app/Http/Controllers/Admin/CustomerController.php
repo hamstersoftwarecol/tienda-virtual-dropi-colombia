@@ -104,16 +104,15 @@ class CustomerController extends Controller
             if (!empty($dropiData['has_history'])) {
                 return response()->json($dropiData);
             }
+
+            // If Dropi API explicitly returned that this number has no history and no local orders exist
+            if (isset($dropiData['has_history']) && $dropiData['has_history'] === false && $orders->count() === 0) {
+                return response()->json($dropiData);
+            }
         }
 
-        // 2. Reference & test numbers configuration
-        $negativeReportPhones = ['3114567890', '3001234567', '3006667788'];
-        $knownSafeDropiBuyers = ['3103761814'];
-        $knownDropiBuyers = array_merge($knownSafeDropiBuyers, $negativeReportPhones);
-
-        $hasHistory = ($orders->count() > 0) || in_array($nationalPhone, $knownDropiBuyers);
-
-        if (!$hasHistory) {
+        // 2. If no Dropi history, evaluate local store database orders
+        if ($orders->count() === 0) {
             return response()->json([
                 'success' => true,
                 'has_history' => false,
@@ -124,164 +123,8 @@ class CustomerController extends Controller
         }
 
         $inStoreOrders = $orders->count();
-
-        // Special Profile: High Return Risk (e.g. 3114567890 - Real Dropi structure)
-        if (in_array($nationalPhone, $negativeReportPhones) && $inStoreOrders === 0) {
-            $isExact311 = ($nationalPhone === '3114567890');
-            $totalReturns = $isExact311 ? 11 : 3;
-            $inOtherStores = $isExact311 ? 11 : 4;
-            $delivered = $isExact311 ? 0 : 1;
-            $deliveredPercent = $isExact311 ? 0 : 25;
-            $returnsPercent = $isExact311 ? 100 : 75;
-
-            $negativeReports = [
-                [
-                    'date' => '22 Ago 2026',
-                    'carrier' => 'ENVIA',
-                    'reason' => 'Destinatario no responde en la dirección de entrega suministrada',
-                    'severity' => 'Alta',
-                    'store_type' => 'Tienda Dropi Externa',
-                ],
-                [
-                    'date' => '18 Ago 2026',
-                    'carrier' => 'ENVIA',
-                    'reason' => 'Cliente rechazó paquete en puerta (No solicitó el producto)',
-                    'severity' => 'Alta',
-                    'store_type' => 'Tienda Dropi Externa',
-                ],
-                [
-                    'date' => '10 Ago 2026',
-                    'carrier' => 'INTERRAPIDISIMO',
-                    'reason' => 'Teléfono apagado o fuera de servicio durante intento de entrega',
-                    'severity' => 'Media',
-                    'store_type' => 'Tienda Dropi Externa',
-                ],
-                [
-                    'date' => '28 Jul 2026',
-                    'carrier' => 'SERVIENTREGA',
-                    'reason' => 'Cliente no tenía el dinero completo para el pago contra entrega',
-                    'severity' => 'Alta',
-                    'store_type' => 'Tienda Dropi Externa',
-                ],
-                [
-                    'date' => '15 Jul 2026',
-                    'carrier' => 'DOMINA',
-                    'reason' => 'Dirección de destino con nomenclatura inexistente o incompleta',
-                    'severity' => 'Media',
-                    'store_type' => 'Tienda Dropi Externa',
-                ],
-            ];
-
-            $carriersBreakdown = $isExact311 ? [
-                [
-                    'name' => 'SERVIENTREGA',
-                    'in_transit' => 0,
-                    'returns' => 1,
-                    'delivered' => 0,
-                ],
-                [
-                    'name' => 'INTERRAPIDISIMO',
-                    'in_transit' => 0,
-                    'returns' => 3,
-                    'delivered' => 0,
-                ],
-                [
-                    'name' => 'DOMINA',
-                    'in_transit' => 0,
-                    'returns' => 1,
-                    'delivered' => 0,
-                ],
-                [
-                    'name' => 'ENVIA',
-                    'in_transit' => 0,
-                    'returns' => 6,
-                    'delivered' => 0,
-                ],
-            ] : [
-                [
-                    'name' => 'SERVIENTREGA',
-                    'in_transit' => 0,
-                    'returns' => 2,
-                    'delivered' => 1,
-                ],
-                [
-                    'name' => 'INTERRAPIDISIMO',
-                    'in_transit' => 0,
-                    'returns' => 1,
-                    'delivered' => 0,
-                ],
-            ];
-
-            $priceBehaviorBreakdown = $isExact311 ? [
-                [
-                    'range' => '$0 a $50.000',
-                    'in_transit' => 0,
-                    'returns' => 2,
-                    'delivered' => 0,
-                ],
-                [
-                    'range' => '$50.001 a $100.000',
-                    'in_transit' => 0,
-                    'returns' => 8,
-                    'delivered' => 0,
-                ],
-                [
-                    'range' => 'Más de $200.000',
-                    'in_transit' => 0,
-                    'returns' => 1,
-                    'delivered' => 0,
-                ],
-            ] : [
-                [
-                    'range' => '$100.001 a $200.000',
-                    'in_transit' => 0,
-                    'returns' => 3,
-                    'delivered' => 1,
-                ]
-            ];
-
-            return response()->json([
-                'success' => true,
-                'has_history' => true,
-                'phone' => $nationalPhone,
-                'formatted_phone' => '+57 ' . substr($nationalPhone, 0, 3) . ' ' . substr($nationalPhone, 3, 3) . ' ' . substr($nationalPhone, 6),
-                'buyer_type' => 'Comprador Frecuente',
-                'last_update' => '23 Ago 2026',
-                'in_store_orders' => 0,
-                'in_other_stores_orders' => $inOtherStores,
-                'total_history' => $inOtherStores,
-                'in_transit_count' => 0,
-                'returns_count' => $totalReturns,
-                'delivered_count' => $delivered,
-                'delivered_percent' => $deliveredPercent,
-                'returns_percent' => $returnsPercent,
-                'metric_label' => 'Devoluciones',
-                'metric_value' => "{$totalReturns} ({$returnsPercent}%)",
-                'delivery_probability' => 'Riesgosa',
-                'delivery_probability_class' => 'danger',
-                'delivery_certainty' => 'Alta probabilidad de no recibir correctamente el pedido.',
-                'delivery_action' => 'Confirmar detalles de entrega con el cliente y monitorear.',
-                'has_negative_reports' => true,
-                'negative_reports_count' => $totalReturns,
-                'negative_reports' => $negativeReports,
-                'carriers_breakdown' => $carriersBreakdown,
-                'shipping_type_breakdown' => [
-                    [
-                        'name' => 'Contra entrega',
-                        'in_transit' => 0,
-                        'returns' => $totalReturns,
-                        'delivered' => $delivered,
-                    ]
-                ],
-                'price_behavior_breakdown' => $priceBehaviorBreakdown,
-                'customer_name' => 'Comprador Frecuente con Devoluciones',
-                'customer_city' => 'Colombia',
-                'orders' => [],
-            ]);
-        }
-
-        $inOtherStoresOrders = ($inStoreOrders > 0) ? 0 : 1;
-        $totalNetworkOrders = max(1, $inStoreOrders + $inOtherStoresOrders);
+        $inOtherStoresOrders = 0;
+        $totalNetworkOrders = $inStoreOrders;
 
         $deliveredCount = $orders->where('status', 'delivered')->count();
         $processingCount = $orders->whereIn('status', ['processing', 'shipped'])->count();

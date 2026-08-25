@@ -83,8 +83,33 @@ class DropiBuyerDetailsTest extends TestCase
         ]);
     }
 
-    public function test_buyer_details_returns_dropi_network_profile_for_verified_phone(): void
+    public function test_buyer_details_fetches_positive_profile_from_dropi_bff_api(): void
     {
+        \App\Models\DropiToken::create([
+            'store' => 'Tienda Test',
+            'token' => 'header.eyJzdWIiOiIzNjE4NjQiLCJ1c2VyX2lkIjozNjE4NjR9.signature',
+            'is_valid' => true,
+            'user_id_dropi' => '361864',
+        ]);
+
+        \Illuminate\Support\Facades\Http::fake([
+            'https://api-v2.dropi.co/bff/customers/fingerprint/v2*' => \Illuminate\Support\Facades\Http::response([
+                'isSuccess' => true,
+                'data' => [
+                    'buyer_type' => 'Comprador Esporádico',
+                    'score' => 'Segura',
+                    'total_orders' => 1,
+                    'delivered_orders' => 1,
+                    'returns_orders' => 0,
+                    'in_transit_orders' => 0,
+                    'in_other_stores_orders' => 1,
+                    'carriers_breakdown' => [
+                        ['name' => 'TCC', 'in_transit' => 0, 'returns' => 0, 'delivered' => 1],
+                    ],
+                ]
+            ], 200),
+        ]);
+
         $response = $this->actingAs($this->admin)->getJson('/admin/customers/buyer-details?phone=3103761814');
 
         $response->assertStatus(200);
@@ -94,29 +119,11 @@ class DropiBuyerDetailsTest extends TestCase
             'phone' => '3103761814',
             'buyer_type' => 'Comprador Esporádico',
             'delivery_probability' => 'Segura',
-            'in_other_stores_orders' => 1,
+            'delivered_count' => 1,
         ]);
     }
 
-    public function test_buyer_details_returns_high_risk_profile_for_phone_with_returns(): void
-    {
-        $response = $this->actingAs($this->admin)->getJson('/admin/customers/buyer-details?phone=3114567890');
-
-        $response->assertStatus(200);
-        $response->assertJson([
-            'success' => true,
-            'has_history' => true,
-            'phone' => '3114567890',
-            'buyer_type' => 'Comprador Frecuente',
-            'delivery_probability' => 'Riesgosa',
-            'returns_count' => 11,
-            'delivered_count' => 0,
-            'metric_label' => 'Devoluciones',
-            'has_negative_reports' => true,
-        ]);
-    }
-
-    public function test_buyer_details_fetches_real_time_from_dropi_bff_api(): void
+    public function test_buyer_details_fetches_negative_profile_from_dropi_bff_api(): void
     {
         \App\Models\DropiToken::create([
             'store' => 'Tienda Test',
