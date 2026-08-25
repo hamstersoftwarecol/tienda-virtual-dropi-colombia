@@ -178,6 +178,19 @@
                     </div>
                 </div>
 
+                <!-- No History Found State -->
+                <div id="buyerNoHistoryContainer" class="d-none">
+                    <div class="card border-0 shadow-sm rounded-4 p-4 text-center bg-white mb-3">
+                        <div class="mx-auto mb-3" style="width: 64px; height: 64px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                            <i class="bi bi-person-x text-muted fs-2"></i>
+                        </div>
+                        <h6 class="fw-bold text-dark mb-1">Sin historial registrado en Dropi</h6>
+                        <p class="text-muted small mb-0" id="buyerNoHistoryMessage">
+                            No se encontró historial de compras para este número de teléfono.
+                        </p>
+                    </div>
+                </div>
+
                 <!-- Buyer Results Container -->
                 <div id="buyerResultsContainer" class="d-none">
                     <!-- Top Buyer Profile Banner -->
@@ -412,6 +425,7 @@ function openBuyerDetailsModal(phone) {
     // Reset view
     document.getElementById('buyerErrorAlert').classList.add('d-none');
     document.getElementById('buyerResultsContainer').classList.add('d-none');
+    document.getElementById('buyerNoHistoryContainer').classList.add('d-none');
     document.getElementById('buyerLoadingState').classList.add('d-none');
 
     if (phone) {
@@ -432,6 +446,8 @@ function fetchBuyerDetails() {
     const loading = document.getElementById('buyerLoadingState');
     const errorAlert = document.getElementById('buyerErrorAlert');
     const errorMessage = document.getElementById('buyerErrorMessage');
+    const noHistoryContainer = document.getElementById('buyerNoHistoryContainer');
+    const noHistoryMessage = document.getElementById('buyerNoHistoryMessage');
     const results = document.getElementById('buyerResultsContainer');
     const searchBtn = document.getElementById('buyerSearchBtn');
 
@@ -439,12 +455,14 @@ function fetchBuyerDetails() {
         errorAlert.classList.remove('d-none');
         errorMessage.textContent = 'Debes ingresar un número de celular valido para poder ver el historial del comprador';
         results.classList.add('d-none');
+        noHistoryContainer.classList.add('d-none');
         return;
     }
 
     // Show loading
     errorAlert.classList.add('d-none');
     results.classList.add('d-none');
+    noHistoryContainer.classList.add('d-none');
     loading.classList.remove('d-none');
     searchBtn.disabled = true;
 
@@ -465,8 +483,17 @@ function fetchBuyerDetails() {
             return;
         }
 
+        // If no purchase history found for this phone
+        if (data.has_history === false) {
+            noHistoryContainer.classList.remove('d-none');
+            noHistoryMessage.textContent = data.message || 'No se encontró historial de compras para este número de teléfono.';
+            results.classList.add('d-none');
+            return;
+        }
+
         // Render Results
         results.classList.remove('d-none');
+        noHistoryContainer.classList.add('d-none');
         document.getElementById('buyerPhoneDisplay').textContent = data.phone;
         document.getElementById('buyerTypeBadge').textContent = data.buyer_type || 'Esporádico';
         document.getElementById('buyerLastUpdate').textContent = data.last_update || '23 Ago 2026';

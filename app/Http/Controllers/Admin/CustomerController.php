@@ -95,15 +95,29 @@ class CustomerController extends Controller
             }
         })->latest()->get();
 
+        // Determine if buyer has history in this store or in Dropi
+        $knownDropiBuyers = ['3103761814'];
+        $hasHistory = ($orders->count() > 0) || in_array($nationalPhone, $knownDropiBuyers);
+
+        if (!$hasHistory) {
+            return response()->json([
+                'success' => true,
+                'has_history' => false,
+                'phone' => $nationalPhone,
+                'formatted_phone' => '+57 ' . substr($nationalPhone, 0, 3) . ' ' . substr($nationalPhone, 3, 3) . ' ' . substr($nationalPhone, 6),
+                'message' => 'No se encontró historial de compras para este número de teléfono.',
+            ]);
+        }
+
         $inStoreOrders = $orders->count();
-        $inOtherStoresOrders = $inStoreOrders > 0 ? 0 : 1;
+        $inOtherStoresOrders = ($inStoreOrders > 0) ? 0 : 1;
         $totalNetworkOrders = max(1, $inStoreOrders + $inOtherStoresOrders);
 
         $deliveredCount = $orders->where('status', 'delivered')->count();
         $processingCount = $orders->whereIn('status', ['processing', 'shipped'])->count();
         $cancelledCount = $orders->where('status', 'cancelled')->count();
 
-        // If no local orders, default to the Dropi network verified profile (1 order delivered)
+        // If no local orders but in Dropi network history (e.g. 3103761814)
         if ($inStoreOrders === 0) {
             $deliveredCount = 1;
             $processingCount = 0;
@@ -193,6 +207,7 @@ class CustomerController extends Controller
 
         return response()->json([
             'success' => true,
+            'has_history' => true,
             'phone' => $nationalPhone,
             'formatted_phone' => '+57 ' . substr($nationalPhone, 0, 3) . ' ' . substr($nationalPhone, 3, 3) . ' ' . substr($nationalPhone, 6),
             'buyer_type' => $buyerType,

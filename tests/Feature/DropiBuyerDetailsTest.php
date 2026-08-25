@@ -61,11 +61,40 @@ class DropiBuyerDetailsTest extends TestCase
         $response->assertStatus(200);
         $response->assertJson([
             'success' => true,
+            'has_history' => true,
             'phone' => '3129876543',
             'delivery_probability' => 'Segura',
             'delivered_count' => 1,
             'buyer_type' => 'Comprador Esporádico',
             'in_store_orders' => 1,
+        ]);
+    }
+
+    public function test_buyer_details_returns_no_history_message_for_unknown_phone(): void
+    {
+        $response = $this->actingAs($this->admin)->getJson('/admin/customers/buyer-details?phone=3122154598');
+
+        $response->assertStatus(200);
+        $response->assertJson([
+            'success' => true,
+            'has_history' => false,
+            'phone' => '3122154598',
+            'message' => 'No se encontró historial de compras para este número de teléfono.',
+        ]);
+    }
+
+    public function test_buyer_details_returns_dropi_network_profile_for_verified_phone(): void
+    {
+        $response = $this->actingAs($this->admin)->getJson('/admin/customers/buyer-details?phone=3103761814');
+
+        $response->assertStatus(200);
+        $response->assertJson([
+            'success' => true,
+            'has_history' => true,
+            'phone' => '3103761814',
+            'buyer_type' => 'Comprador Esporádico',
+            'delivery_probability' => 'Segura',
+            'in_other_stores_orders' => 1,
         ]);
     }
 
