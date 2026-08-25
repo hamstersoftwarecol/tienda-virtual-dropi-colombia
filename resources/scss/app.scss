@@ -504,7 +504,7 @@ main {
     }
 }
 
-// Animations
+// Animations & Modern Landing Utilities
 @keyframes fadeIn {
     from { opacity: 0; transform: translateY(8px); }
     to { opacity: 1; transform: translateY(0); }
@@ -513,3 +513,40 @@ main {
 .fade-in {
     animation: fadeIn 0.35s ease forwards;
 }
+
+.fw-extrabold {
+    font-weight: 800 !important;
+}
+
+.shadow-2xl {
+    box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.25) !important;
+}
+
+.hover-scale {
+    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.2s ease;
+    &:hover {
+        transform: scale(1.05);
+    }
+}
+
+.transform-hover:hover {
+    transform: translateY(-6px);
+}
+
+.category-hover-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 16px 30px -5px rgba(15, 23, 42, 0.08) !important;
+    border-color: #cbd5e1 !important;
+}
+
+.nav-pills .nav-link {
+    color: #475569;
+    transition: all 0.2s ease;
+
+    &.active {
+        background: var(--store-primary-gradient);
+        color: #ffffff;
+        box-shadow: 0 4px 12px rgba(79, 70, 229, 0.25);
+    }
+}
+
