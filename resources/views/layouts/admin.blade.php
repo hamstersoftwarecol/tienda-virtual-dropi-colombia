@@ -51,12 +51,9 @@
                     <i class="bi bi-people"></i> Clientes & Compradores
                 </a>
 
-                <div class="text-muted small text-uppercase fw-bold px-3 mt-3 mb-1" style="font-size: 0.68rem; letter-spacing: 0.5px;">Ajustes & Conexión</div>
+                <div class="text-muted small text-uppercase fw-bold px-3 mt-3 mb-1" style="font-size: 0.68rem; letter-spacing: 0.5px;">Ajustes & Marketing</div>
                 <a class="nav-link {{ request()->routeIs('admin.coupons.*') ? 'active' : '' }}" href="{{ route('admin.coupons.index') }}">
-                    <i class="bi bi-ticket-perforated"></i> Cupones
-                </a>
-                <a class="nav-link {{ request()->routeIs('admin.integrations.*') ? 'active' : '' }}" href="{{ route('admin.integrations.index') }}">
-                    <i class="bi bi-plug text-primary"></i> Integración WooCommerce
+                    <i class="bi bi-ticket-perforated"></i> Cupones de Descuento
                 </a>
                 
                 <hr class="border-secondary border-opacity-25 my-3">
@@ -147,9 +144,6 @@
                         </a>
                         <a class="nav-link {{ request()->routeIs('admin.customers.*') ? 'active' : '' }}" href="{{ route('admin.customers.index') }}">
                             <i class="bi bi-people"></i> Clientes
-                        </a>
-                        <a class="nav-link {{ request()->routeIs('admin.integrations.*') ? 'active' : '' }}" href="{{ route('admin.integrations.index') }}">
-                            <i class="bi bi-plug text-primary"></i> Integración WooCommerce
                         </a>
                         <a class="nav-link {{ request()->routeIs('admin.coupons.*') ? 'active' : '' }}" href="{{ route('admin.coupons.index') }}">
                             <i class="bi bi-ticket-perforated"></i> Cupones

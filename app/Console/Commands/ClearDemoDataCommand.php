@@ -9,16 +9,14 @@ use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\Review;
 use App\Models\User;
-use App\Models\WooCommerceApiKey;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Str;
 
 class ClearDemoDataCommand extends Command
 {
     protected $signature = 'store:clear-demo {--admin-email=admin@tienda.com} {--admin-password=password}';
-    protected $description = 'Borra todos los datos demo de la tienda (productos, pedidos, clientes, cupones) conservando únicamente al Administrador y las claves de integración';
+    protected $description = 'Borra todos los datos demo de la tienda (productos, pedidos, clientes, cupones) conservando únicamente al Administrador';
 
     public function handle(): int
     {
@@ -78,21 +76,6 @@ class ClearDemoDataCommand extends Command
         } else {
             $this->info("✓ Usuario Administrador conservado: {$admin->email}");
         }
-
-        // 8. Asegurar claves de WooCommerce
-        if (WooCommerceApiKey::count() === 0) {
-            WooCommerceApiKey::create([
-                'user_id' => $admin->id,
-                'description' => 'Integración WooCommerce REST API',
-                'permissions' => 'read_write',
-                'consumer_key' => 'ck_' . Str::random(32),
-                'consumer_secret' => 'cs_' . Str::random(32),
-                'truncated_key' => 'api99',
-                'is_active' => true,
-                'last_access_at' => now(),
-            ]);
-        }
-        $this->line('✓ Claves de WooCommerce conservadas.');
 
         DB::statement('PRAGMA foreign_keys = ON;'); // SQLite
         try {

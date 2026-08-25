@@ -4,15 +4,9 @@ use App\Http\Controllers\Admin\CategoryController as AdminCategoryController;
 use App\Http\Controllers\Admin\CouponController as AdminCouponController;
 use App\Http\Controllers\Admin\CustomerController as AdminCustomerController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
-use App\Http\Controllers\Admin\IntegrationController as AdminIntegrationController;
 use App\Http\Controllers\Admin\ManualOrderController as AdminManualOrderController;
 use App\Http\Controllers\Admin\OrderController as AdminOrderController;
 use App\Http\Controllers\Admin\ProductController as AdminProductController;
-use App\Http\Controllers\Api\WooCommerce\CustomerController as WcCustomerController;
-use App\Http\Controllers\Api\WooCommerce\OrderController as WcOrderController;
-use App\Http\Controllers\Api\WooCommerce\ProductController as WcProductController;
-use App\Http\Controllers\Api\WooCommerce\SystemController as WcSystemController;
-use App\Http\Controllers\Api\WooCommerce\WebhookController as WcWebhookController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\HomeController;
@@ -20,7 +14,6 @@ use App\Http\Controllers\OrderController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\ShopController;
-use App\Http\Middleware\WooCommerceAuthMiddleware;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -89,50 +82,10 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/customers', [AdminCustomerController::class, 'index'])->name('customers.index');
     Route::post('/customers', [AdminCustomerController::class, 'store'])->name('customers.store');
 
-    // Integrations & WooCommerce API Keys
-    Route::get('/integrations', [AdminIntegrationController::class, 'index'])->name('integrations.index');
-    Route::post('/integrations/woocommerce/keys', [AdminIntegrationController::class, 'generateWooCommerceKey'])->name('integrations.wc.keys.generate');
-    Route::delete('/integrations/woocommerce/keys/{key}', [AdminIntegrationController::class, 'revokeWooCommerceKey'])->name('integrations.wc.keys.revoke');
-
     // Coupons Management
     Route::get('/coupons', [AdminCouponController::class, 'index'])->name('coupons.index');
     Route::post('/coupons', [AdminCouponController::class, 'store'])->name('coupons.store');
     Route::delete('/coupons/{coupon}', [AdminCouponController::class, 'destroy'])->name('coupons.destroy');
-});
-
-/*
-|--------------------------------------------------------------------------
-| WooCommerce REST API Emulation Engine (/wp-json/wc/v3/...)
-| Enables Dropi (and any other tool) to connect seamlessly to NovaStore
-|--------------------------------------------------------------------------
-*/
-Route::middleware([WooCommerceAuthMiddleware::class])->group(function () {
-    // WordPress Index
-    Route::get('/wp-json', [WcSystemController::class, 'index']);
-    Route::get('/wp-json/wc/v3', [WcSystemController::class, 'wcIndex']);
-    Route::get('/wp-json/wc/v3/system_status', [WcSystemController::class, 'systemStatus']);
-
-    // WooCommerce Products
-    Route::get('/wp-json/wc/v3/products', [WcProductController::class, 'index']);
-    Route::get('/wp-json/wc/v3/products/{id}', [WcProductController::class, 'show']);
-    Route::post('/wp-json/wc/v3/products', [WcProductController::class, 'store']);
-    Route::put('/wp-json/wc/v3/products/{id}', [WcProductController::class, 'update']);
-    Route::patch('/wp-json/wc/v3/products/{id}', [WcProductController::class, 'update']);
-    Route::delete('/wp-json/wc/v3/products/{id}', [WcProductController::class, 'destroy']);
-
-    // WooCommerce Orders
-    Route::get('/wp-json/wc/v3/orders', [WcOrderController::class, 'index']);
-    Route::get('/wp-json/wc/v3/orders/{id}', [WcOrderController::class, 'show']);
-    Route::post('/wp-json/wc/v3/orders', [WcOrderController::class, 'store']);
-    Route::put('/wp-json/wc/v3/orders/{id}', [WcOrderController::class, 'update']);
-    Route::patch('/wp-json/wc/v3/orders/{id}', [WcOrderController::class, 'update']);
-
-    // WooCommerce Customers
-    Route::get('/wp-json/wc/v3/customers', [WcCustomerController::class, 'index']);
-
-    // WooCommerce Webhooks
-    Route::get('/wp-json/wc/v3/webhooks', [WcWebhookController::class, 'index']);
-    Route::post('/wp-json/wc/v3/webhooks', [WcWebhookController::class, 'store']);
 });
 
 // Breeze Auth Routes
