@@ -185,9 +185,14 @@
                             <i class="bi bi-person-x text-muted fs-2"></i>
                         </div>
                         <h6 class="fw-bold text-dark mb-1">Sin historial registrado en Dropi</h6>
-                        <p class="text-muted small mb-0" id="buyerNoHistoryMessage">
+                        <p class="text-muted small mb-3" id="buyerNoHistoryMessage">
                             No se encontró historial de compras para este número de teléfono.
                         </p>
+                        <div class="d-flex justify-content-center">
+                            <span class="badge bg-success-subtle text-success border border-success border-opacity-25 rounded-pill px-3 py-1.5 small fw-semibold">
+                                <i class="bi bi-broadcast me-1"></i> Conectado en tiempo real con Dropi API v2
+                            </span>
+                        </div>
                     </div>
                 </div>
 
@@ -201,6 +206,9 @@
                                     <span class="text-muted small fw-bold">Comprador</span>
                                     <span class="badge bg-primary text-white rounded-pill px-2.5 py-1 small fw-bold" id="buyerTypeBadge">
                                         Esporádico
+                                    </span>
+                                    <span class="badge bg-success-subtle text-success border border-success border-opacity-25 rounded-pill px-2 py-0.5 small fw-semibold">
+                                        <i class="bi bi-broadcast me-1"></i> Dropi API v2
                                     </span>
                                 </div>
                                 <h4 class="fw-bold font-monospace text-dark mb-0 d-flex align-items-center gap-2">
