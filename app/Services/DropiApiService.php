@@ -445,4 +445,53 @@ class DropiApiService
         }
         return $normalized;
     }
+
+    /**
+     * Query buyer details / history from Dropi API
+     */
+    public function getBuyerDetails(string $phone): ?array
+    {
+        $tokenRecord = $this->getActiveToken();
+        if (!$tokenRecord || empty($tokenRecord->token)) {
+            return null;
+        }
+
+        $token = trim($tokenRecord->token);
+        $cleanPhone = preg_replace('/[^0-9]/', '', $phone);
+        $nationalPhone = (str_starts_with($cleanPhone, '57') && strlen($cleanPhone) >= 12) ? substr($cleanPhone, 2) : $cleanPhone;
+
+        $endpoints = [
+            'https://api.dropi.co/integrations/customers/history',
+            'https://api.dropi.co/integrations/orders/buyer-history',
+            'https://api.dropi.co/integrations/orders/score',
+        ];
+
+        foreach ($endpoints as $endpoint) {
+            try {
+                $response = Http::withHeaders($this->getWordPressHeaders($token))
+                    ->timeout(8)
+                    ->connectTimeout(4)
+                    ->post($endpoint, [
+                        'phone' => $nationalPhone,
+                        'phone_number' => $nationalPhone,
+                        'country_code' => '57',
+                    ]);
+
+                if ($response->successful()) {
+                    $json = $response->json();
+                    if (!empty($json['isSuccess']) && !empty($json['objects'])) {
+                        return (array) $json['objects'];
+                    }
+                    if (!empty($json['data'])) {
+                        return (array) $json['data'];
+                    }
+                }
+            } catch (\Exception $e) {
+                Log::info("Dropi API buyer query exception: " . $e->getMessage());
+            }
+        }
+
+        return null;
+    }
 }
+

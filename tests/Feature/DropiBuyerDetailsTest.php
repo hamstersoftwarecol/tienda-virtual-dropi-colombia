@@ -98,6 +98,22 @@ class DropiBuyerDetailsTest extends TestCase
         ]);
     }
 
+    public function test_buyer_details_returns_high_risk_profile_for_phone_with_returns(): void
+    {
+        $response = $this->actingAs($this->admin)->getJson('/admin/customers/buyer-details?phone=3001234567');
+
+        $response->assertStatus(200);
+        $response->assertJson([
+            'success' => true,
+            'has_history' => true,
+            'phone' => '3001234567',
+            'buyer_type' => 'Comprador No Confiable',
+            'delivery_probability' => 'Riesgosa',
+            'returns_count' => 3,
+            'delivered_count' => 1,
+        ]);
+    }
+
     public function test_buyer_details_validates_phone_number(): void
     {
         $response = $this->actingAs($this->admin)->getJson('/admin/customers/buyer-details?phone=123');

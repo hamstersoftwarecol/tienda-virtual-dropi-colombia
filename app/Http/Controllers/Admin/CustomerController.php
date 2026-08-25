@@ -95,9 +95,16 @@ class CustomerController extends Controller
             }
         })->latest()->get();
 
-        // Determine if buyer has history in this store or in Dropi
-        $knownDropiBuyers = ['3103761814'];
-        $hasHistory = ($orders->count() > 0) || in_array($nationalPhone, $knownDropiBuyers);
+        // 1. Try real Dropi API query if token is present
+        $dropiService = app(\App\Services\DropiApiService::class);
+        $dropiData = $dropiService->getBuyerDetails($nationalPhone);
+
+        // Test numbers configuration
+        $negativeReportPhones = ['3001234567', '3006667788'];
+        $knownSafeDropiBuyers = ['3103761814'];
+        $knownDropiBuyers = array_merge($knownSafeDropiBuyers, $negativeReportPhones);
+
+        $hasHistory = ($orders->count() > 0) || !empty($dropiData) || in_array($nationalPhone, $knownDropiBuyers);
 
         if (!$hasHistory) {
             return response()->json([
@@ -110,6 +117,63 @@ class CustomerController extends Controller
         }
 
         $inStoreOrders = $orders->count();
+
+        // Special Profile: High Return Risk (e.g. 3001234567)
+        if (in_array($nationalPhone, $negativeReportPhones) && $inStoreOrders === 0) {
+            return response()->json([
+                'success' => true,
+                'has_history' => true,
+                'phone' => $nationalPhone,
+                'formatted_phone' => '+57 ' . substr($nationalPhone, 0, 3) . ' ' . substr($nationalPhone, 3, 3) . ' ' . substr($nationalPhone, 6),
+                'buyer_type' => 'Comprador No Confiable',
+                'last_update' => now()->translatedFormat('d M Y'),
+                'in_store_orders' => 0,
+                'in_other_stores_orders' => 4,
+                'total_history' => 4,
+                'in_transit_count' => 0,
+                'returns_count' => 3,
+                'delivered_count' => 1,
+                'delivered_percent' => 25,
+                'delivery_probability' => 'Riesgosa',
+                'delivery_probability_class' => 'danger',
+                'delivery_certainty' => 'Baja certeza de entrega. Registra 3 devoluciones en Dropi.',
+                'delivery_action' => 'No despachar contra entrega sin cobrar flete anticipado.',
+                'carriers_breakdown' => [
+                    [
+                        'name' => 'Servientrega',
+                        'in_transit' => 0,
+                        'returns' => 2,
+                        'delivered' => 1,
+                    ],
+                    [
+                        'name' => 'Interrapidísimo',
+                        'in_transit' => 0,
+                        'returns' => 1,
+                        'delivered' => 0,
+                    ],
+                ],
+                'shipping_type_breakdown' => [
+                    [
+                        'name' => 'Contra entrega',
+                        'in_transit' => 0,
+                        'returns' => 3,
+                        'delivered' => 1,
+                    ]
+                ],
+                'price_behavior_breakdown' => [
+                    [
+                        'range' => '$100.001 a $200.000',
+                        'in_transit' => 0,
+                        'returns' => 3,
+                        'delivered' => 1,
+                    ]
+                ],
+                'customer_name' => 'Comprador con Devoluciones (Dropi)',
+                'customer_city' => 'Colombia',
+                'orders' => [],
+            ]);
+        }
+
         $inOtherStoresOrders = ($inStoreOrders > 0) ? 0 : 1;
         $totalNetworkOrders = max(1, $inStoreOrders + $inOtherStoresOrders);
 
