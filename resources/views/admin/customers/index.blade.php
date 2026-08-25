@@ -256,6 +256,35 @@
                         </div>
                     </div>
 
+                    <!-- Reportes Negativos e Incidencias (Dropi Risk System) -->
+                    <div id="buyerNegativeReportsSection" class="card border-0 shadow-sm rounded-4 p-3 bg-white mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <div class="d-flex align-items-center gap-2">
+                                <i class="bi bi-shield-check text-success fs-5" id="negativeReportIcon"></i>
+                                <h6 class="fw-bold text-dark mb-0">Reportes Negativos e Incidencias</h6>
+                            </div>
+                            <span class="badge bg-success-subtle text-success border border-success border-opacity-25 rounded-pill px-2.5 py-1 small fw-bold" id="negativeReportsBadge">
+                                0 Reportes
+                            </span>
+                        </div>
+                        
+                        <!-- When negative reports exist -->
+                        <div id="negativeReportsListContainer" class="d-none mt-2">
+                            <p class="text-danger small mb-2 fw-semibold">
+                                <i class="bi bi-exclamation-triangle-fill me-1"></i> Se registraron devoluciones e incidencias de entrega previas para este comprador:
+                            </p>
+                            <div id="negativeReportsList" class="d-flex flex-column gap-2">
+                                <!-- Dynamically populated -->
+                            </div>
+                        </div>
+
+                        <!-- Clean state (0 negative reports) -->
+                        <div id="negativeReportsCleanState" class="d-flex align-items-center gap-2 p-2.5 rounded-3 bg-success-subtle border border-success border-opacity-25 small text-success fw-semibold mt-1">
+                            <i class="bi bi-check-circle-fill fs-5"></i>
+                            <span>Este comprador no tiene reportes negativos ni devoluciones registradas en Dropi.</span>
+                        </div>
+                    </div>
+
                     <!-- Análisis detallado -->
                     <div class="card border-0 shadow-sm rounded-4 p-3 bg-white mb-3">
                         <div class="d-flex justify-content-between align-items-center mb-3">
@@ -512,6 +541,49 @@ function fetchBuyerDetails() {
         document.getElementById('buyerDeliveredMetric').textContent = `${data.delivered_count} (${data.delivered_percent}%)`;
         document.getElementById('buyerProgressBar').style.width = data.delivered_percent + '%';
         document.getElementById('buyerProgressBar').className = `progress-bar bg-${data.delivery_probability_class} rounded-pill`;
+
+        // Render Negative Reports (Incidencias y Devoluciones)
+        const negIcon = document.getElementById('negativeReportIcon');
+        const negBadge = document.getElementById('negativeReportsBadge');
+        const negListContainer = document.getElementById('negativeReportsListContainer');
+        const negList = document.getElementById('negativeReportsList');
+        const negCleanState = document.getElementById('negativeReportsCleanState');
+
+        const negativeCount = data.negative_reports_count || 0;
+        negBadge.textContent = `${negativeCount} ${negativeCount === 1 ? 'Reporte' : 'Reportes'}`;
+
+        if (negativeCount > 0 && data.negative_reports && data.negative_reports.length > 0) {
+            negIcon.className = 'bi bi-shield-exclamation text-danger fs-5';
+            negBadge.className = 'badge bg-danger-subtle text-danger border border-danger border-opacity-25 rounded-pill px-2.5 py-1 small fw-bold';
+            negListContainer.classList.remove('d-none');
+            negCleanState.classList.add('d-none');
+
+            negList.innerHTML = '';
+            data.negative_reports.forEach(r => {
+                const item = document.createElement('div');
+                item.className = 'p-2.5 rounded-3 bg-danger bg-opacity-10 border border-danger border-opacity-25 text-start';
+                item.innerHTML = `
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <span class="badge bg-danger text-white rounded-pill px-2 py-0.5 small fw-bold">
+                            <i class="bi bi-x-circle me-1"></i> ${r.carrier || 'Transportadora'}
+                        </span>
+                        <span class="text-muted small font-monospace">${r.date || ''}</span>
+                    </div>
+                    <div class="text-dark small fw-semibold mb-1">${r.reason || 'Incidencia de entrega / Devolución'}</div>
+                    <div class="d-flex align-items-center gap-2 small text-muted" style="font-size: 0.75rem;">
+                        <span><i class="bi bi-shop me-1"></i>${r.store_type || 'Red Dropi'}</span>
+                        <span>•</span>
+                        <span class="text-danger fw-bold">Severidad: ${r.severity || 'Alta'}</span>
+                    </div>
+                `;
+                negList.appendChild(item);
+            });
+        } else {
+            negIcon.className = 'bi bi-shield-check text-success fs-5';
+            negBadge.className = 'badge bg-success-subtle text-success border border-success border-opacity-25 rounded-pill px-2.5 py-1 small fw-bold';
+            negListContainer.classList.add('d-none');
+            negCleanState.classList.remove('d-none');
+        }
 
         // Summary Counters
         document.getElementById('buyerTotalAll').textContent = data.total_history;

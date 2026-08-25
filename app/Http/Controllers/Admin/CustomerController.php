@@ -120,6 +120,30 @@ class CustomerController extends Controller
 
         // Special Profile: High Return Risk (e.g. 3001234567)
         if (in_array($nationalPhone, $negativeReportPhones) && $inStoreOrders === 0) {
+            $negativeReports = [
+                [
+                    'date' => now()->subDays(12)->translatedFormat('d M Y'),
+                    'carrier' => 'Servientrega',
+                    'reason' => 'Cliente rechazó el paquete en puerta (Indicó no tener dinero para pago contra entrega)',
+                    'severity' => 'Alta',
+                    'store_type' => 'Tienda Dropi Externa',
+                ],
+                [
+                    'date' => now()->subDays(28)->translatedFormat('d M Y'),
+                    'carrier' => 'Servientrega',
+                    'reason' => 'Número telefónico no contestó llamadas tras 3 intentos de visita',
+                    'severity' => 'Media',
+                    'store_type' => 'Tienda Dropi Externa',
+                ],
+                [
+                    'date' => now()->subDays(45)->translatedFormat('d M Y'),
+                    'carrier' => 'Interrapidísimo',
+                    'reason' => 'Dirección de entrega no coincide con nomenclatura reportada por transportadora',
+                    'severity' => 'Alta',
+                    'store_type' => 'Tienda Dropi Externa',
+                ],
+            ];
+
             return response()->json([
                 'success' => true,
                 'has_history' => true,
@@ -138,6 +162,9 @@ class CustomerController extends Controller
                 'delivery_probability_class' => 'danger',
                 'delivery_certainty' => 'Baja certeza de entrega. Registra 3 devoluciones en Dropi.',
                 'delivery_action' => 'No despachar contra entrega sin cobrar flete anticipado.',
+                'has_negative_reports' => true,
+                'negative_reports_count' => 3,
+                'negative_reports' => $negativeReports,
                 'carriers_breakdown' => [
                     [
                         'name' => 'Servientrega',
@@ -208,6 +235,18 @@ class CustomerController extends Controller
             $certainty = 'Historial previo de paquetes no recibidos.';
             $action = 'Solicitar anticipo de flete antes de enviar.';
             $buyerType = 'Comprador con Devoluciones';
+        }
+
+        // Build negative reports from local cancelled orders if any
+        $negativeReports = [];
+        foreach ($orders->where('status', 'cancelled') as $cancelledOrd) {
+            $negativeReports[] = [
+                'date' => $cancelledOrd->created_at->translatedFormat('d M Y'),
+                'carrier' => $cancelledOrd->shipping_carrier ?: 'Transportadora Nacional',
+                'reason' => $cancelledOrd->admin_notes ?: 'Pedido cancelado / Devolución en puerta',
+                'severity' => 'Media',
+                'store_type' => 'Tu Tienda (NovaStore)',
+            ];
         }
 
         // Detailed carrier analytics (TCC, Servientrega, Coordinadora, etc.)
@@ -287,6 +326,9 @@ class CustomerController extends Controller
             'delivery_probability_class' => $probabilityClass,
             'delivery_certainty' => $certainty,
             'delivery_action' => $action,
+            'has_negative_reports' => count($negativeReports) > 0,
+            'negative_reports_count' => count($negativeReports),
+            'negative_reports' => $negativeReports,
             'carriers_breakdown' => $carriersBreakdown,
             'shipping_type_breakdown' => $shippingTypeBreakdown,
             'price_behavior_breakdown' => $priceBehaviorBreakdown,
