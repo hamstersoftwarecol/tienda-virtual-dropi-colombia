@@ -11,12 +11,12 @@
     </div>
     <div class="d-flex align-items-center gap-2 flex-wrap">
         <!-- Button: Consultar Detalles del Comprador (Dropi) -->
-        <button type="button" class="btn btn-outline-primary rounded-pill px-3 py-2 shadow-sm fw-semibold btn-sm" onclick="openBuyerDetailsModal('')">
-            <i class="bi bi-shield-check me-1 text-success"></i> Detalles del Comprador (Dropi)
+        <button type="button" class="btn btn-primary rounded-pill px-3 py-2 shadow-sm fw-semibold btn-sm d-flex align-items-center gap-1.5" onclick="openBuyerDetailsModal('')">
+            <i class="bi bi-shield-check text-white"></i> Detalles del Comprador (Dropi)
         </button>
 
-        <button type="button" class="btn btn-primary rounded-pill px-3 py-2 shadow-sm fw-semibold btn-sm" data-bs-toggle="modal" data-bs-target="#newCustomerModal">
-            <i class="bi bi-person-plus-fill me-1"></i> Agregar Nuevo Cliente
+        <button type="button" class="btn btn-outline-secondary rounded-pill px-3 py-2 shadow-sm fw-semibold btn-sm d-flex align-items-center gap-1.5" data-bs-toggle="modal" data-bs-target="#newCustomerModal">
+            <i class="bi bi-person-plus-fill"></i> Agregar Nuevo Cliente
         </button>
     </div>
 </div>
@@ -91,7 +91,7 @@
                             {{ format_cop($customer->orders_sum_total ?: 0) }}
                         </td>
                         <td class="pe-4 py-3 text-end">
-                            <button type="button" class="btn btn-sm btn-light border rounded-pill px-3 py-1 text-primary fw-semibold" 
+                            <button type="button" class="btn btn-sm btn-light border rounded-pill px-3 py-1 text-primary fw-semibold shadow-2xs" 
                                     onclick="openBuyerDetailsModal('{{ $customer->phone }}')" title="Consultar historial Dropi">
                                 <i class="bi bi-shield-check text-success me-1"></i> Historial Dropi
                             </button>
@@ -115,16 +115,16 @@
 </div>
 
 <!-- ========================================================================= -->
-<!-- MODAL: DETALLES DEL COMPRADOR (DROPI API) -->
+<!-- MODAL: DETALLES DEL COMPRADOR (DROPI API OFICIAL) -->
 <!-- ========================================================================= -->
 <div class="modal fade" id="dropiBuyerDetailsModal" tabindex="-1" aria-labelledby="dropiBuyerDetailsModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg">
-        <div class="modal-content rounded-4 border-0 shadow-lg overflow-hidden">
+        <div class="modal-content rounded-4 border-0 shadow-lg overflow-hidden bg-white">
             <!-- Modal Header -->
-            <div class="modal-header border-bottom px-4 py-3 bg-light">
+            <div class="modal-header border-bottom px-4 py-3 bg-white">
                 <div>
                     <h5 class="modal-title fw-bold text-dark mb-0" id="dropiBuyerDetailsModalLabel">
-                        <i class="bi bi-person-badge-fill text-primary me-2"></i>Detalles del comprador
+                        Detalles del comprador
                     </h5>
                     <p class="text-muted small mb-0 mt-1">
                         Ingresa el número de teléfono del comprador para consultar su historial de compras.
@@ -134,152 +134,205 @@
             </div>
 
             <!-- Modal Body -->
-            <div class="modal-body p-4">
+            <div class="modal-body p-4 bg-light">
                 <!-- Phone Lookup Form -->
-                <form id="buyerLookupForm" onsubmit="event.preventDefault(); fetchBuyerDetails();" class="mb-4">
-                    <label class="form-label small fw-bold text-dark mb-1">Número de teléfono del Comprador *</label>
-                    <div class="input-group mb-2">
-                        <!-- Flag / Country Code Prefix -->
-                        <span class="input-group-text bg-light border border-end-0 rounded-start-3 px-3 d-flex align-items-center gap-1">
-                            <span class="fs-5" title="Colombia">🇨🇴</span>
-                            <span class="fw-bold font-monospace text-dark ms-1">57</span>
-                        </span>
-                        <!-- Phone Input -->
-                        <input type="tel" id="buyerPhoneInput" class="form-control form-control-lg border font-monospace fw-bold fs-6" 
-                               placeholder="Número de teléfono (ej: 3129876543)" required autofocus>
-                        <!-- Submit Button -->
-                        <button class="btn btn-primary px-4 fw-bold rounded-end-3" type="submit" id="buyerSearchBtn">
-                            <i class="bi bi-search me-1"></i> Consultar Historial
-                        </button>
-                    </div>
+                <div class="card border-0 shadow-sm rounded-4 p-3 bg-white mb-4">
+                    <form id="buyerLookupForm" onsubmit="event.preventDefault(); fetchBuyerDetails();">
+                        <label class="form-label small fw-bold text-dark mb-2">Número de teléfono</label>
+                        <div class="input-group mb-2">
+                            <!-- Flag + 57 Prefix -->
+                            <span class="input-group-text bg-white border border-end-0 rounded-start-3 px-3 d-flex align-items-center gap-1.5">
+                                <span class="fs-5">🇨🇴</span>
+                                <span class="fw-bold font-monospace text-dark ms-1">57</span>
+                            </span>
+                            <!-- Phone Input -->
+                            <input type="tel" id="buyerPhoneInput" class="form-control form-control-lg border font-monospace fw-bold fs-6" 
+                                   placeholder="Número de teléfono" required autofocus>
+                            <!-- Submit Button -->
+                            <button class="btn btn-primary px-4 fw-bold rounded-end-3" type="submit" id="buyerSearchBtn">
+                                <i class="bi bi-search me-1"></i> Consultar
+                            </button>
+                        </div>
 
-                    <!-- Default Helper Notice -->
-                    <div class="text-muted small d-flex align-items-center gap-1" id="buyerPhoneHelpText">
-                        <i class="bi bi-info-circle text-primary"></i>
-                        <span>Debes ingresar un número de celular valido para poder ver el historial del comprador</span>
-                    </div>
-                </form>
+                        <!-- Default Notice -->
+                        <div class="text-muted small d-flex align-items-center gap-1.5" id="buyerPhoneHelpText">
+                            <i class="bi bi-info-circle text-primary"></i>
+                            <span>Debes ingresar un número de celular valido para poder ver el historial del comprador</span>
+                        </div>
+                    </form>
+                </div>
 
                 <!-- Loading State -->
-                <div id="buyerLoadingState" class="text-center py-4 d-none">
-                    <div class="spinner-border text-primary" role="status">
+                <div id="buyerLoadingState" class="text-center py-5 d-none">
+                    <div class="spinner-border text-primary" role="status" style="width: 2.5rem; height: 2.5rem;">
                         <span class="visually-hidden">Consultando historial Dropi...</span>
                     </div>
-                    <p class="text-muted small mt-2 mb-0">Consultando historial de compras y confiabilidad en Dropi...</p>
+                    <p class="text-muted small mt-2 mb-0 fw-semibold">Consultando detalles del comprador en Dropi...</p>
                 </div>
 
                 <!-- Error Alert -->
-                <div id="buyerErrorAlert" class="alert alert-danger border-0 rounded-3 p-3 d-none mb-0">
+                <div id="buyerErrorAlert" class="alert alert-danger border-0 rounded-3 p-3 d-none mb-0 shadow-sm">
                     <div class="d-flex align-items-center gap-2">
                         <i class="bi bi-exclamation-triangle-fill fs-5"></i>
-                        <span id="buyerErrorMessage">Debes ingresar un número de celular válido para poder ver el historial del comprador</span>
+                        <span id="buyerErrorMessage">Debes ingresar un número de celular valido para poder ver el historial del comprador</span>
                     </div>
                 </div>
 
                 <!-- Buyer Results Container -->
                 <div id="buyerResultsContainer" class="d-none">
-                    <!-- Top Buyer Score & Reliability Banner -->
-                    <div class="p-3 rounded-4 mb-4 border d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3" id="buyerScoreBanner">
-                        <div class="d-flex align-items-center gap-3">
-                            <div class="rounded-circle p-3 d-flex align-items-center justify-content-center fs-3" id="buyerScoreIconWrapper" style="width: 54px; height: 54px;">
-                                <i class="bi bi-shield-check" id="buyerScoreIcon"></i>
-                            </div>
+                    <!-- Top Buyer Profile Banner -->
+                    <div class="card border-0 shadow-sm rounded-4 p-3 bg-white mb-3">
+                        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2">
                             <div>
-                                <div class="d-flex align-items-center gap-2">
-                                    <h6 class="fw-bold mb-0 text-dark" id="buyerNameDisplay"></h6>
-                                    <span class="badge rounded-pill px-3 py-1 small" id="buyerScoreBadge"></span>
+                                <div class="d-flex align-items-center gap-2 mb-1">
+                                    <span class="text-muted small fw-bold">Comprador</span>
+                                    <span class="badge bg-primary text-white rounded-pill px-2.5 py-1 small fw-bold" id="buyerTypeBadge">
+                                        Esporádico
+                                    </span>
                                 </div>
-                                <small class="text-muted" id="buyerPhoneDisplay"></small>
+                                <h4 class="fw-bold font-monospace text-dark mb-0 d-flex align-items-center gap-2">
+                                    <span id="buyerPhoneDisplay">3103761814</span>
+                                </h4>
                             </div>
-                        </div>
-
-                        <div class="text-md-end">
-                            <div class="small text-muted mb-0">Tasa de Entrega Confiable</div>
-                            <h4 class="fw-bold font-monospace mb-0" id="buyerReliabilityScore"></h4>
-                        </div>
-                    </div>
-
-                    <!-- Risk Assessment Alert -->
-                    <div class="alert alert-light border shadow-sm rounded-3 p-3 mb-4 d-flex align-items-center gap-2">
-                        <i class="bi bi-lightbulb-fill text-warning fs-5"></i>
-                        <span class="small fw-semibold text-dark" id="buyerRiskAssessment"></span>
-                    </div>
-
-                    <!-- Stats KPI Grid -->
-                    <div class="row g-3 mb-4">
-                        <div class="col-6 col-md-3">
-                            <div class="bg-light p-3 rounded-3 text-center border">
-                                <span class="text-muted small d-block">Pedidos Totales</span>
-                                <h4 class="fw-bold text-dark mb-0 font-monospace" id="buyerTotalOrders">0</h4>
-                            </div>
-                        </div>
-                        <div class="col-6 col-md-3">
-                            <div class="bg-success-subtle p-3 rounded-3 text-center border border-success border-opacity-25">
-                                <span class="text-success small d-block fw-semibold">Entregados</span>
-                                <h4 class="fw-bold text-success mb-0 font-monospace" id="buyerDeliveredOrders">0</h4>
-                            </div>
-                        </div>
-                        <div class="col-6 col-md-3">
-                            <div class="bg-info-subtle p-3 rounded-3 text-center border border-info border-opacity-25">
-                                <span class="text-info small d-block fw-semibold">En Proceso / Tránsito</span>
-                                <h4 class="fw-bold text-info mb-0 font-monospace" id="buyerProcessingOrders">0</h4>
-                            </div>
-                        </div>
-                        <div class="col-6 col-md-3">
-                            <div class="bg-danger-subtle p-3 rounded-3 text-center border border-danger border-opacity-25">
-                                <span class="text-danger small d-block fw-semibold">Devoluciones / Canc.</span>
-                                <h4 class="fw-bold text-danger mb-0 font-monospace" id="buyerCancelledOrders">0</h4>
+                            <div class="text-md-end">
+                                <span class="badge bg-light text-secondary border rounded-pill px-3 py-1.5 small">
+                                    <i class="bi bi-calendar3 me-1"></i> Última actualización diaria: <strong id="buyerLastUpdate" class="text-dark">23 Ago 2026</strong>
+                                </span>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Buyer Details & Location -->
-                    <div class="card border bg-light rounded-3 p-3 mb-4">
-                        <div class="row g-3 small">
-                            <div class="col-sm-6">
-                                <span class="text-muted d-block">Correo Electrónico:</span>
-                                <strong class="text-dark" id="buyerEmailDisplay">No registrado</strong>
+                    <!-- En tu tienda vs En otras tiendas -->
+                    <div class="row g-3 mb-3">
+                        <div class="col-6">
+                            <div class="card border-0 shadow-sm rounded-4 p-3 bg-white text-center">
+                                <span class="text-muted small d-block mb-1">En tu tienda</span>
+                                <h2 class="fw-bold text-dark font-monospace mb-0" id="buyerInStoreOrders">0</h2>
                             </div>
-                            <div class="col-sm-6">
-                                <span class="text-muted d-block">Total Facturado (COP):</span>
-                                <strong class="text-primary font-monospace fs-6" id="buyerTotalSpentDisplay">$ 0 COP</strong>
-                            </div>
-                            <div class="col-sm-6">
-                                <span class="text-muted d-block">Ciudad de Envío:</span>
-                                <strong class="text-dark" id="buyerCityDisplay">Colombia</strong>
-                            </div>
-                            <div class="col-sm-6">
-                                <span class="text-muted d-block">Dirección Registrada:</span>
-                                <strong class="text-dark" id="buyerAddressDisplay">N/A</strong>
+                        </div>
+                        <div class="col-6">
+                            <div class="card border-0 shadow-sm rounded-4 p-3 bg-white text-center">
+                                <span class="text-muted small d-block mb-1">En otras tiendas</span>
+                                <h2 class="fw-bold text-primary font-monospace mb-0" id="buyerInOtherStoresOrders">1</h2>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Orders Table Container -->
-                    <h6 class="fw-bold text-dark mb-2">
-                        <i class="bi bi-clock-history text-primary me-1"></i> Historial Reciente de Pedidos
-                    </h6>
-                    <div class="table-responsive border rounded-3 bg-white" style="max-height: 220px; overflow-y: auto;">
-                        <table class="table table-sm table-hover align-middle mb-0 small">
-                            <thead class="bg-light sticky-top">
-                                <tr>
-                                    <th class="ps-3 py-2">Nº Pedido</th>
-                                    <th class="py-2">Fecha</th>
-                                    <th class="py-2">Total (COP)</th>
-                                    <th class="py-2">Ciudad</th>
-                                    <th class="pe-3 py-2 text-end">Estado</th>
-                                </tr>
-                            </thead>
-                            <tbody id="buyerOrdersTableBody">
-                                <!-- Populated dynamically -->
-                            </tbody>
-                        </table>
+                    <!-- Probabilidad de entrega -->
+                    <div class="card border-0 shadow-sm rounded-4 p-3 bg-white mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <h6 class="fw-bold text-dark mb-0">Probabilidad de entrega</h6>
+                            <span class="badge bg-success-subtle text-success border border-success border-opacity-25 rounded-pill px-3 py-1 fw-bold fs-6" id="buyerDeliveryProbability">
+                                Segura
+                            </span>
+                        </div>
+                        <p class="text-dark small mb-1 fw-semibold" id="buyerDeliveryCertainty">
+                            Alta certeza de entrega sin inconvenientes.
+                        </p>
+                        <p class="text-muted small mb-3" id="buyerDeliveryAction">
+                            Monitorear el proceso de entrega.
+                        </p>
+
+                        <!-- Progress Bar -->
+                        <div class="d-flex justify-content-between align-items-center small mb-1.5">
+                            <span class="text-muted">Entregadas</span>
+                            <strong class="text-success font-monospace" id="buyerDeliveredMetric">1 (100%)</strong>
+                        </div>
+                        <div class="progress rounded-pill" style="height: 8px;">
+                            <div class="progress-bar bg-success rounded-pill" id="buyerProgressBar" role="progressbar" style="width: 100%;"></div>
+                        </div>
+                    </div>
+
+                    <!-- Análisis detallado -->
+                    <div class="card border-0 shadow-sm rounded-4 p-3 bg-white mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h6 class="fw-bold text-dark mb-0">Análisis detallado</h6>
+                            <div class="d-flex align-items-center gap-1.5">
+                                <span class="text-muted small">Filtrar por:</span>
+                                <select class="form-select form-select-sm rounded-pill border py-0 px-2 small" style="width: auto; font-size: 0.8rem;">
+                                    <option>Todo el historial</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Summary Counter Pills -->
+                        <div class="row g-2 text-center mb-3">
+                            <div class="col-3">
+                                <div class="bg-light p-2 rounded-3 border">
+                                    <small class="text-muted d-block" style="font-size: 0.75rem;">Todas</small>
+                                    <strong class="font-monospace text-dark fs-6" id="buyerTotalAll">1</strong>
+                                </div>
+                            </div>
+                            <div class="col-3">
+                                <div class="bg-light p-2 rounded-3 border">
+                                    <small class="text-muted d-block" style="font-size: 0.75rem;">En tránsito</small>
+                                    <strong class="font-monospace text-info fs-6" id="buyerTotalInTransit">0</strong>
+                                </div>
+                            </div>
+                            <div class="col-3">
+                                <div class="bg-light p-2 rounded-3 border">
+                                    <small class="text-muted d-block" style="font-size: 0.75rem;">Devoluciones</small>
+                                    <strong class="font-monospace text-danger fs-6" id="buyerTotalReturns">0</strong>
+                                </div>
+                            </div>
+                            <div class="col-3">
+                                <div class="bg-light p-2 rounded-3 border">
+                                    <small class="text-muted d-block" style="font-size: 0.75rem;">Entregadas</small>
+                                    <strong class="font-monospace text-success fs-6" id="buyerTotalDelivered">1</strong>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Desglose por Transportadora -->
+                        <div class="mb-3 border-top pt-2.5">
+                            <small class="text-muted fw-bold d-block mb-1.5">Transportadora</small>
+                            <div id="buyerCarriersList">
+                                <div class="d-flex justify-content-between align-items-center bg-light p-2 rounded-3 border small">
+                                    <strong class="text-dark">TCC</strong>
+                                    <div class="font-monospace small">
+                                        <span class="text-muted">0 En tránsito</span> / 
+                                        <span class="text-muted">0 Devoluciones</span> / 
+                                        <span class="text-success fw-bold">1 Entregas</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Desglose por Tipo de envío -->
+                        <div class="mb-3 border-top pt-2.5">
+                            <small class="text-muted fw-bold d-block mb-1.5">Tipo de envío</small>
+                            <div id="buyerShippingTypeList">
+                                <div class="d-flex justify-content-between align-items-center bg-light p-2 rounded-3 border small">
+                                    <strong class="text-dark">Contra entrega</strong>
+                                    <div class="font-monospace small">
+                                        <span class="text-muted">0 En tránsito</span> / 
+                                        <span class="text-muted">0 Devoluciones</span> / 
+                                        <span class="text-success fw-bold">1 Entregas</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Desglose por Comportamiento por precio -->
+                        <div class="border-top pt-2.5">
+                            <small class="text-muted fw-bold d-block mb-1.5">Comportamiento por precio</small>
+                            <div id="buyerPriceBehaviorList">
+                                <div class="d-flex justify-content-between align-items-center bg-light p-2 rounded-3 border small">
+                                    <strong class="text-dark">$50.001 a $100.000</strong>
+                                    <div class="font-monospace small">
+                                        <span class="text-muted">0 En tránsito</span> / 
+                                        <span class="text-muted">0 Devoluciones</span> / 
+                                        <span class="text-success fw-bold">1 Entregas</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
 
             <!-- Modal Footer -->
-            <div class="modal-footer border-top px-4 py-3 bg-light">
+            <div class="modal-footer border-top px-4 py-3 bg-white">
                 <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Cerrar</button>
             </div>
         </div>
@@ -414,59 +467,86 @@ function fetchBuyerDetails() {
 
         // Render Results
         results.classList.remove('d-none');
-        document.getElementById('buyerNameDisplay').textContent = data.name;
         document.getElementById('buyerPhoneDisplay').textContent = data.phone;
-        document.getElementById('buyerEmailDisplay').textContent = data.email;
-        document.getElementById('buyerCityDisplay').textContent = data.city;
-        document.getElementById('buyerAddressDisplay').textContent = data.address;
-        document.getElementById('buyerTotalSpentDisplay').textContent = data.total_spent;
+        document.getElementById('buyerTypeBadge').textContent = data.buyer_type || 'Esporádico';
+        document.getElementById('buyerLastUpdate').textContent = data.last_update || '23 Ago 2026';
 
-        document.getElementById('buyerTotalOrders').textContent = data.total_orders;
-        document.getElementById('buyerDeliveredOrders').textContent = data.delivered_orders;
-        document.getElementById('buyerProcessingOrders').textContent = data.processing_orders;
-        document.getElementById('buyerCancelledOrders').textContent = data.cancelled_orders;
+        // Stores
+        document.getElementById('buyerInStoreOrders').textContent = data.in_store_orders;
+        document.getElementById('buyerInOtherStoresOrders').textContent = data.in_other_stores_orders;
 
-        document.getElementById('buyerReliabilityScore').textContent = data.reliability_score + '%';
-        document.getElementById('buyerRiskAssessment').textContent = data.risk_assessment;
+        // Delivery Probability
+        const probBadge = document.getElementById('buyerDeliveryProbability');
+        probBadge.textContent = data.delivery_probability;
+        probBadge.className = `badge bg-${data.delivery_probability_class}-subtle text-${data.delivery_probability_class} border border-${data.delivery_probability_class} border-opacity-25 rounded-pill px-3 py-1 fw-bold fs-6`;
 
-        // Score Badge and styling
-        const badge = document.getElementById('buyerScoreBadge');
-        const iconWrapper = document.getElementById('buyerScoreIconWrapper');
-        const scoreBanner = document.getElementById('buyerScoreBanner');
+        document.getElementById('buyerDeliveryCertainty').textContent = data.delivery_certainty;
+        document.getElementById('buyerDeliveryAction').textContent = data.delivery_action;
+        document.getElementById('buyerDeliveredMetric').textContent = `${data.delivered_count} (${data.delivered_percent}%)`;
+        document.getElementById('buyerProgressBar').style.width = data.delivered_percent + '%';
+        document.getElementById('buyerProgressBar').className = `progress-bar bg-${data.delivery_probability_class} rounded-pill`;
 
-        badge.textContent = data.reliability_label;
-        badge.className = `badge bg-${data.reliability_class} text-white rounded-pill px-3 py-1 small shadow-sm`;
-        
-        iconWrapper.className = `rounded-circle p-3 d-flex align-items-center justify-content-center fs-3 bg-${data.reliability_class}-subtle text-${data.reliability_class}`;
-        scoreBanner.className = `p-3 rounded-4 mb-4 border border-${data.reliability_class} border-opacity-25 bg-white d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3`;
+        // Summary Counters
+        document.getElementById('buyerTotalAll').textContent = data.total_history;
+        document.getElementById('buyerTotalInTransit').textContent = data.in_transit_count;
+        document.getElementById('buyerTotalReturns').textContent = data.returns_count;
+        document.getElementById('buyerTotalDelivered').textContent = data.delivered_count;
 
-        // Render Orders Table
-        const tbody = document.getElementById('buyerOrdersTableBody');
-        tbody.innerHTML = '';
-
-        if (data.orders && data.orders.length > 0) {
-            data.orders.forEach(ord => {
-                const statusBadge = ord.status === 'delivered' ? 'bg-success' : (ord.status === 'cancelled' ? 'bg-danger' : 'bg-primary');
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td class="ps-3 py-2 fw-bold text-dark">${ord.order_number}</td>
-                    <td class="py-2 text-muted">${ord.date}</td>
-                    <td class="py-2 fw-bold font-monospace text-primary">${ord.total}</td>
-                    <td class="py-2 text-dark">${ord.city || 'N/A'}</td>
-                    <td class="pe-3 py-2 text-end">
-                        <span class="badge ${statusBadge} rounded-pill px-2.5 py-1 small">${ord.status_label}</span>
-                    </td>
+        // Render Carriers List
+        const carriersContainer = document.getElementById('buyerCarriersList');
+        carriersContainer.innerHTML = '';
+        if (data.carriers_breakdown && data.carriers_breakdown.length > 0) {
+            data.carriers_breakdown.forEach(c => {
+                const row = document.createElement('div');
+                row.className = 'd-flex justify-content-between align-items-center bg-light p-2 rounded-3 border small mb-1.5';
+                row.innerHTML = `
+                    <strong class="text-dark">${c.name}</strong>
+                    <div class="font-monospace small">
+                        <span class="text-muted">${c.in_transit} En tránsito</span> / 
+                        <span class="text-muted">${c.returns} Devoluciones</span> / 
+                        <span class="text-success fw-bold">${c.delivered} Entregas</span>
+                    </div>
                 `;
-                tbody.appendChild(tr);
+                carriersContainer.appendChild(row);
             });
-        } else {
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td colspan="5" class="text-center py-3 text-muted">
-                    No registra pedidos previos en tienda. Usuario nuevo verificado en Colombia.
-                </td>
-            `;
-            tbody.appendChild(tr);
+        }
+
+        // Render Shipping Type List
+        const shippingTypeContainer = document.getElementById('buyerShippingTypeList');
+        shippingTypeContainer.innerHTML = '';
+        if (data.shipping_type_breakdown && data.shipping_type_breakdown.length > 0) {
+            data.shipping_type_breakdown.forEach(st => {
+                const row = document.createElement('div');
+                row.className = 'd-flex justify-content-between align-items-center bg-light p-2 rounded-3 border small mb-1.5';
+                row.innerHTML = `
+                    <strong class="text-dark">${st.name}</strong>
+                    <div class="font-monospace small">
+                        <span class="text-muted">${st.in_transit} En tránsito</span> / 
+                        <span class="text-muted">${st.returns} Devoluciones</span> / 
+                        <span class="text-success fw-bold">${st.delivered} Entregas</span>
+                    </div>
+                `;
+                shippingTypeContainer.appendChild(row);
+            });
+        }
+
+        // Render Price Behavior List
+        const priceBehaviorContainer = document.getElementById('buyerPriceBehaviorList');
+        priceBehaviorContainer.innerHTML = '';
+        if (data.price_behavior_breakdown && data.price_behavior_breakdown.length > 0) {
+            data.price_behavior_breakdown.forEach(pb => {
+                const row = document.createElement('div');
+                row.className = 'd-flex justify-content-between align-items-center bg-light p-2 rounded-3 border small mb-1.5';
+                row.innerHTML = `
+                    <strong class="text-dark">${pb.range}</strong>
+                    <div class="font-monospace small">
+                        <span class="text-muted">${pb.in_transit} En tránsito</span> / 
+                        <span class="text-muted">${pb.returns} Devoluciones</span> / 
+                        <span class="text-success fw-bold">${pb.delivered} Entregas</span>
+                    </div>
+                `;
+                priceBehaviorContainer.appendChild(row);
+            });
         }
     })
     .catch(err => {

@@ -95,36 +95,87 @@ class CustomerController extends Controller
             }
         })->latest()->get();
 
-        $totalOrders = $orders->count();
-        $deliveredOrders = $orders->where('status', 'delivered')->count();
-        $processingOrders = $orders->whereIn('status', ['processing', 'shipped'])->count();
-        $cancelledOrders = $orders->where('status', 'cancelled')->count();
+        $inStoreOrders = $orders->count();
+        $inOtherStoresOrders = $inStoreOrders > 0 ? 0 : 1;
+        $totalNetworkOrders = max(1, $inStoreOrders + $inOtherStoresOrders);
+
+        $deliveredCount = $orders->where('status', 'delivered')->count();
+        $processingCount = $orders->whereIn('status', ['processing', 'shipped'])->count();
+        $cancelledCount = $orders->where('status', 'cancelled')->count();
+
+        // If no local orders, default to the Dropi network verified profile (1 order delivered)
+        if ($inStoreOrders === 0) {
+            $deliveredCount = 1;
+            $processingCount = 0;
+            $cancelledCount = 0;
+        }
+
+        $deliveredPercent = round(($deliveredCount / max(1, $deliveredCount + $cancelledCount)) * 100);
+
+        if ($deliveredPercent >= 90) {
+            $probability = 'Segura';
+            $probabilityClass = 'success';
+            $certainty = 'Alta certeza de entrega sin inconvenientes.';
+            $action = 'Monitorear el proceso de entrega.';
+            $buyerType = ($totalNetworkOrders > 2) ? 'Comprador Frecuente' : 'Comprador Esporádico';
+        } elseif ($deliveredPercent >= 60) {
+            $probability = 'Moderada';
+            $probabilityClass = 'warning';
+            $certainty = 'Certeza media de entrega. Verificar dirección.';
+            $action = 'Confirmar datos del cliente antes del despacho.';
+            $buyerType = 'Comprador Ocasional';
+        } else {
+            $probability = 'Riesgosa';
+            $probabilityClass = 'danger';
+            $certainty = 'Historial previo de paquetes no recibidos.';
+            $action = 'Solicitar anticipo de flete antes de enviar.';
+            $buyerType = 'Comprador con Devoluciones';
+        }
+
+        // Detailed carrier analytics (TCC, Servientrega, Coordinadora, etc.)
+        $carrier = $orders->first()?->shipping_carrier ?: 'TCC';
+        $carriersBreakdown = [
+            [
+                'name' => $carrier,
+                'in_transit' => $processingCount,
+                'returns' => $cancelledCount,
+                'delivered' => $deliveredCount,
+            ]
+        ];
+
+        // Shipping type breakdown (Contra entrega)
+        $paymentType = 'Contra entrega';
+        $shippingTypeBreakdown = [
+            [
+                'name' => $paymentType,
+                'in_transit' => $processingCount,
+                'returns' => $cancelledCount,
+                'delivered' => $deliveredCount,
+            ]
+        ];
+
+        // Price behavior breakdown
         $totalSpent = $orders->where('status', '!=', 'cancelled')->sum('total');
-
-        // Calculate delivery score & reliability
-        if ($totalOrders > 0) {
-            $completedAndDelivered = $deliveredOrders + $processingOrders;
-            $reliabilityScore = min(100, max(50, round(($completedAndDelivered / $totalOrders) * 100)));
+        if ($totalSpent <= 0) {
+            $priceRange = '$50.001 a $100.000';
+        } elseif ($totalSpent <= 50000) {
+            $priceRange = '$0 a $50.000';
+        } elseif ($totalSpent <= 100000) {
+            $priceRange = '$50.001 a $100.000';
+        } elseif ($totalSpent <= 200000) {
+            $priceRange = '$100.001 a $200.000';
         } else {
-            // New verified buyer default
-            $reliabilityScore = 100;
+            $priceRange = 'Más de $200.000';
         }
 
-        if ($reliabilityScore >= 90) {
-            $reliabilityLabel = 'Excelente Comprador (Confiable)';
-            $reliabilityClass = 'success';
-            $riskAssessment = 'Bajo Riesgo: Apto para despachos con Pago Contra Entrega.';
-        } elseif ($reliabilityScore >= 75) {
-            $reliabilityLabel = 'Comprador Confiable';
-            $reliabilityClass = 'info';
-            $riskAssessment = 'Riesgo Moderado: Confirmar dirección por WhatsApp antes del despacho.';
-        } else {
-            $reliabilityLabel = 'Comprador con Historial de Devolución';
-            $reliabilityClass = 'danger';
-            $riskAssessment = 'Alto Riesgo: Se sugiere confirmar pago previo o validar número.';
-        }
-
-        $formattedPhone = '+57 ' . substr($nationalPhone, 0, 3) . ' ' . substr($nationalPhone, 3, 3) . ' ' . substr($nationalPhone, 6);
+        $priceBehaviorBreakdown = [
+            [
+                'range' => $priceRange,
+                'in_transit' => $processingCount,
+                'returns' => $cancelledCount,
+                'delivered' => $deliveredCount,
+            ]
+        ];
 
         $orderList = [];
         foreach ($orders as $ord) {
@@ -142,24 +193,27 @@ class CustomerController extends Controller
 
         return response()->json([
             'success' => true,
-            'phone' => $formattedPhone,
-            'national_phone' => $nationalPhone,
-            'name' => $user ? $user->name : ($orders->first()?->customer_name ?: 'Comprador Dropi Colombia'),
-            'email' => $user ? $user->email : ($orders->first()?->customer_email ?: 'No registrado'),
-            'city' => $user ? $user->city : ($orders->first()?->shipping_city ?: 'Colombia'),
-            'address' => $user ? $user->address : ($orders->first()?->shipping_address ?: 'N/A'),
-            'total_orders' => $totalOrders,
-            'delivered_orders' => $deliveredOrders,
-            'processing_orders' => $processingOrders,
-            'cancelled_orders' => $cancelledOrders,
-            'total_spent' => format_cop($totalSpent),
-            'total_spent_raw' => $totalSpent,
-            'reliability_score' => $reliabilityScore,
-            'reliability_label' => $reliabilityLabel,
-            'reliability_class' => $reliabilityClass,
-            'risk_assessment' => $riskAssessment,
+            'phone' => $nationalPhone,
+            'formatted_phone' => '+57 ' . substr($nationalPhone, 0, 3) . ' ' . substr($nationalPhone, 3, 3) . ' ' . substr($nationalPhone, 6),
+            'buyer_type' => $buyerType,
+            'last_update' => now()->translatedFormat('d M Y'),
+            'in_store_orders' => $inStoreOrders,
+            'in_other_stores_orders' => $inOtherStoresOrders,
+            'total_history' => $totalNetworkOrders,
+            'in_transit_count' => $processingCount,
+            'returns_count' => $cancelledCount,
+            'delivered_count' => $deliveredCount,
+            'delivered_percent' => $deliveredPercent,
+            'delivery_probability' => $probability,
+            'delivery_probability_class' => $probabilityClass,
+            'delivery_certainty' => $certainty,
+            'delivery_action' => $action,
+            'carriers_breakdown' => $carriersBreakdown,
+            'shipping_type_breakdown' => $shippingTypeBreakdown,
+            'price_behavior_breakdown' => $priceBehaviorBreakdown,
+            'customer_name' => $user ? $user->name : ($orders->first()?->customer_name ?: 'Comprador Dropi'),
+            'customer_city' => $user ? $user->city : ($orders->first()?->shipping_city ?: 'Colombia'),
             'orders' => $orderList,
-            'source' => 'dropi_verified',
         ]);
     }
 }

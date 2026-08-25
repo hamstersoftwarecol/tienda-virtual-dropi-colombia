@@ -61,12 +61,11 @@ class DropiBuyerDetailsTest extends TestCase
         $response->assertStatus(200);
         $response->assertJson([
             'success' => true,
-            'name' => 'Marcela Gomez',
-            'city' => 'Bucaramanga',
-            'total_orders' => 1,
-            'delivered_orders' => 1,
-            'reliability_score' => 100,
-            'reliability_label' => 'Excelente Comprador (Confiable)',
+            'phone' => '3129876543',
+            'delivery_probability' => 'Segura',
+            'delivered_count' => 1,
+            'buyer_type' => 'Comprador Esporádico',
+            'in_store_orders' => 1,
         ]);
     }
 
