@@ -83,6 +83,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     // Customers Management
     Route::get('/customers', [AdminCustomerController::class, 'index'])->name('customers.index');
     Route::post('/customers', [AdminCustomerController::class, 'store'])->name('customers.store');
+    Route::get('/customers/buyer-details', [AdminCustomerController::class, 'buyerDetails'])->name('customers.buyer_details');
 
     // Coupons Management
     Route::get('/coupons', [AdminCouponController::class, 'index'])->name('coupons.index');

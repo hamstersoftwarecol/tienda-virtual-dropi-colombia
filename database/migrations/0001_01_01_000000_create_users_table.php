@@ -19,8 +19,10 @@ return new class extends Migration
             $table->string('password');
             $table->boolean('is_admin')->default(false);
             $table->string('phone')->nullable();
+            $table->string('dni')->nullable();
             $table->string('address')->nullable();
             $table->string('city')->nullable();
+            $table->string('department')->nullable();
             $table->string('postal_code')->nullable();
             $table->rememberToken();
             $table->timestamps();
