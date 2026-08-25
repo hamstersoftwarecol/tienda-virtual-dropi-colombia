@@ -72,6 +72,11 @@
                                 <div>
                                     <h6 class="mb-0 fw-bold text-dark">{{ $product->name }}</h6>
                                     <small class="text-muted font-monospace">SKU: {{ $product->sku }}</small>
+                                    @if($product->is_dropi_product || $product->dropi_id)
+                                        <span class="badge bg-primary-subtle text-primary border border-primary border-opacity-25 ms-1" style="font-size: 0.65rem;" title="Tienda Dropi: {{ $product->dropi_store ?? 'Tienda 1' }}">
+                                            <i class="bi bi-cloud-check-fill me-1"></i>Dropi #{{ $product->dropi_id }}
+                                        </span>
+                                    @endif
                                     @if($product->is_featured)
                                         <span class="badge bg-warning-subtle text-warning border border-warning ms-1" style="font-size: 0.65rem;">Destacado</span>
                                     @endif

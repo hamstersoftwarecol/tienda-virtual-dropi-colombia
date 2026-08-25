@@ -21,6 +21,9 @@ return new class extends Migration
             $table->longText('description')->nullable();
             $table->decimal('price', 10, 2);
             $table->decimal('compare_price', 10, 2)->nullable();
+            $table->decimal('wholesale_price', 10, 2)->nullable();
+            $table->decimal('profit_margin', 10, 2)->nullable();
+            $table->decimal('suggested_price', 10, 2)->nullable();
             $table->integer('stock')->default(10);
             $table->string('image')->nullable();
             $table->json('images')->nullable();
@@ -28,6 +31,10 @@ return new class extends Migration
             $table->decimal('rating', 3, 2)->default(5.00);
             $table->integer('reviews_count')->default(0);
             $table->integer('sales_count')->default(0);
+            $table->string('dropi_id')->nullable();
+            $table->string('dropi_store')->nullable();
+            $table->boolean('is_dropi_product')->default(false);
+            $table->boolean('is_dropshipping')->default(false);
             $table->boolean('is_featured')->default(false);
             $table->boolean('is_active')->default(true);
             $table->timestamps();

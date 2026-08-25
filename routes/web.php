@@ -4,6 +4,7 @@ use App\Http\Controllers\Admin\CategoryController as AdminCategoryController;
 use App\Http\Controllers\Admin\CouponController as AdminCouponController;
 use App\Http\Controllers\Admin\CustomerController as AdminCustomerController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
+use App\Http\Controllers\Admin\DropiProductController as AdminDropiProductController;
 use App\Http\Controllers\Admin\DropiSettingController as AdminDropiSettingController;
 use App\Http\Controllers\Admin\ManualOrderController as AdminManualOrderController;
 use App\Http\Controllers\Admin\OrderController as AdminOrderController;
@@ -87,6 +88,10 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/coupons', [AdminCouponController::class, 'index'])->name('coupons.index');
     Route::post('/coupons', [AdminCouponController::class, 'store'])->name('coupons.store');
     Route::delete('/coupons/{coupon}', [AdminCouponController::class, 'destroy'])->name('coupons.destroy');
+
+    // Dropi Products & Importer
+    Route::get('/dropi/products', [AdminDropiProductController::class, 'index'])->name('dropi.products.index');
+    Route::post('/dropi/products/import', [AdminDropiProductController::class, 'import'])->name('dropi.products.import');
 
     // Dropi Settings & Token Validation
     Route::get('/dropi/settings', [AdminDropiSettingController::class, 'index'])->name('dropi.settings');

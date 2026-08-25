@@ -36,6 +36,9 @@
                 <a class="nav-link {{ request()->routeIs('admin.products.*') ? 'active' : '' }}" href="{{ route('admin.products.index') }}">
                     <i class="bi bi-box-seam"></i> Productos en Tienda
                 </a>
+                <a class="nav-link {{ request()->routeIs('admin.dropi.products*') ? 'active' : '' }}" href="{{ route('admin.dropi.products.index') }}">
+                    <i class="bi bi-cloud-arrow-down text-primary"></i> Importar Productos Dropi
+                </a>
                 <a class="nav-link {{ request()->routeIs('admin.categories.*') ? 'active' : '' }}" href="{{ route('admin.categories.index') }}">
                     <i class="bi bi-tags"></i> Categorías
                 </a>
@@ -138,6 +141,9 @@
                         </a>
                         <a class="nav-link {{ request()->routeIs('admin.products.*') ? 'active' : '' }}" href="{{ route('admin.products.index') }}">
                             <i class="bi bi-box-seam"></i> Productos
+                        </a>
+                        <a class="nav-link {{ request()->routeIs('admin.dropi.products*') ? 'active' : '' }}" href="{{ route('admin.dropi.products.index') }}">
+                            <i class="bi bi-cloud-arrow-down text-primary"></i> Importar Dropi
                         </a>
                         <a class="nav-link {{ request()->routeIs('admin.orders.*') ? 'active' : '' }}" href="{{ route('admin.orders.index') }}">
                             <i class="bi bi-receipt"></i> Pedidos

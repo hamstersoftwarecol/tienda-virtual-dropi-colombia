@@ -42,4 +42,14 @@ class Category extends Model
     {
         return $this->hasMany(Product::class);
     }
+
+    public function scopeActive($query)
+    {
+        return $query->where('is_active', true);
+    }
+
+    public function scopeFeatured($query)
+    {
+        return $query->where('is_featured', true)->where('is_active', true);
+    }
 }
