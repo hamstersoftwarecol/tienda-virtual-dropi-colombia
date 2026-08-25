@@ -31,20 +31,23 @@ class DropiApiService
             $storeUrl = 'https://' . ltrim($storeUrl, '/');
         }
 
+        $cleanToken = trim($token);
+
         return [
             'User-Agent' => "WordPress/6.6.1; {$storeUrl}",
             'Referer' => "{$storeUrl}/wp-admin/admin.php?page=dropi-products",
             'Origin' => $storeUrl,
             'Content-Type' => 'application/json;charset=UTF-8',
-            'dropi-integration-key' => $token,
+            'dropi-integration-key' => $cleanToken,
+            'Authorization' => 'Bearer ' . $cleanToken,
+            'token' => $cleanToken,
             'Accept' => 'application/json, text/plain, */*',
             'X-Requested-With' => 'XMLHttpRequest',
         ];
     }
 
     /**
-     * Fetch products directly from Dropi API with WooCommerce headers
-     * (POST https://api.dropi.co/integrations/products/index)
+     * Fetch products directly from Dropi API with WooCommerce headers & fallbacks
      */
     public function getProducts(
         int $perPage = 32,
@@ -68,8 +71,14 @@ class DropiApiService
 
         $token = trim($tokenRecord->token);
         $storeName = $tokenRecord->store ?: 'Tienda 1';
-        $endpoint = "https://api.dropi.co/integrations/products/index";
         $cleanSearch = trim((string)$search);
+
+        $endpoints = [
+            "https://api.dropi.co/integrations/products/index",
+            "https://api-v2.dropi.co/integrations/products/index",
+            "https://api.dropi.co/api/products/index",
+            "https://api-v2.dropi.co/api/products/index",
+        ];
 
         $postData = [
             'startData' => $currentPage,
@@ -78,65 +87,72 @@ class DropiApiService
             'order_by' => $orderBy,
             'keywords' => $cleanSearch,
             'active' => true,
-            'no_count' => true,
             'integration' => true,
-            'userVerified' => true,
-            'stockmayor' => 1,
-            'notNulldescription' => true,
-            'get_stock' => false,
         ];
 
         if (!empty($categoryFilter) && $categoryFilter !== 'all') {
             $postData['category'] = $categoryFilter;
         }
 
-        try {
-            $response = Http::withHeaders($this->getWordPressHeaders($token))
-                ->timeout(60)
-                ->connectTimeout(15)
-                ->post($endpoint, $postData);
+        $lastError = 'No se pudo obtener respuesta de la API de Dropi.';
 
-            $json = $response->json();
+        foreach ($endpoints as $endpoint) {
+            try {
+                $response = Http::withHeaders($this->getWordPressHeaders($token))
+                    ->timeout(25)
+                    ->connectTimeout(8)
+                    ->post($endpoint, $postData);
 
-            if ($response->successful() && !empty($json['isSuccess'])) {
-                $objects = is_array($json['objects'] ?? null) ? $json['objects'] : [];
-                $normalized = $this->normalizeDropiApiProducts($objects, $storeName);
+                if ($response->successful()) {
+                    $json = $response->json();
+                    $objects = $json['objects'] ?? ($json['data'] ?? ($json['products'] ?? ($json['result'] ?? [])));
 
-                return [
-                    'success' => true,
-                    'source' => 'api_live',
-                    'products' => $normalized,
-                    'total' => count($normalized),
-                    'message' => empty($normalized) && !empty($cleanSearch) 
-                        ? "No se encontraron productos en Dropi con la palabra clave '{$cleanSearch}'."
-                        : 'Productos sincronizados en tiempo real con la API oficial de Dropi Colombia.',
-                ];
-            } else {
-                $errorMessage = $json['message'] ?? ($json['error'] ?? "Respuesta HTTP {$response->status()} de la API de Dropi.");
-                
-                return [
-                    'success' => false,
-                    'source' => 'api_error',
-                    'products' => [],
-                    'total' => 0,
-                    'message' => "Dropi API: {$errorMessage}",
-                ];
+                    if (is_array($objects) && count($objects) > 0) {
+                        $normalized = $this->normalizeDropiApiProducts($objects, $storeName);
+
+                        return [
+                            'success' => true,
+                            'source' => 'api_live',
+                            'endpoint' => $endpoint,
+                            'products' => $normalized,
+                            'total' => count($normalized),
+                            'message' => empty($normalized) && !empty($cleanSearch) 
+                                ? "No se encontraron productos en Dropi con la palabra clave '{$cleanSearch}'."
+                                : 'Productos sincronizados en tiempo real con la API oficial de Dropi Colombia.',
+                        ];
+                    } elseif (isset($json['isSuccess']) && $json['isSuccess'] === true) {
+                        return [
+                            'success' => true,
+                            'source' => 'api_live',
+                            'endpoint' => $endpoint,
+                            'products' => [],
+                            'total' => 0,
+                            'message' => !empty($cleanSearch)
+                                ? "No se encontraron productos en Dropi con la palabra clave '{$cleanSearch}'."
+                                : 'No hay productos disponibles en este momento en el catálogo de Dropi.',
+                        ];
+                    }
+                } else {
+                    $json = $response->json();
+                    $lastError = $json['message'] ?? ($json['error'] ?? "HTTP {$response->status()} en {$endpoint}");
+                }
+            } catch (\Exception $e) {
+                $lastError = $e->getMessage();
+                Log::info("Dropi products query [{$endpoint}] exception: " . $e->getMessage());
             }
-        } catch (\Exception $e) {
-            Log::warning('Dropi API connection exception: ' . $e->getMessage());
-            
-            return [
-                'success' => false,
-                'source' => 'connection_error',
-                'products' => [],
-                'total' => 0,
-                'message' => 'Tiempo de espera agotado al conectar con Dropi. Por favor recarga la página.',
-            ];
         }
+
+        return [
+            'success' => false,
+            'source' => 'api_error',
+            'products' => [],
+            'total' => 0,
+            'message' => "Dropi API: {$lastError}. Por favor verifica que tu token JWT en 'Configuración Dropi' esté activo.",
+        ];
     }
 
     /**
-     * Get single product data directly from Dropi API (GET products/v2/{id})
+     * Get single product data directly from Dropi API with multi-endpoint fallback
      */
     public function getProduct(string|int $id, ?string $token = null): ?array
     {
@@ -149,22 +165,46 @@ class DropiApiService
             return null;
         }
 
-        $endpoint = "https://api.dropi.co/integrations/products/v2/{$id}";
+        $endpoints = [
+            "https://api.dropi.co/integrations/products/v2/{$id}",
+            "https://api-v2.dropi.co/integrations/products/v2/{$id}",
+            "https://api.dropi.co/integrations/products/detail/{$id}",
+            "https://api.dropi.co/api/products/{$id}",
+            "https://api-v2.dropi.co/api/products/{$id}",
+        ];
 
-        try {
-            $response = Http::withHeaders($this->getWordPressHeaders($token))
-                ->timeout(30)
-                ->connectTimeout(10)
-                ->get($endpoint);
+        foreach ($endpoints as $endpoint) {
+            try {
+                $response = Http::withHeaders($this->getWordPressHeaders($token))
+                    ->timeout(20)
+                    ->connectTimeout(6)
+                    ->get($endpoint);
 
-            if ($response->successful()) {
-                $json = $response->json();
-                if (!empty($json['isSuccess']) && !empty($json['objects'])) {
-                    return (array) $json['objects'];
+                if ($response->successful()) {
+                    $json = $response->json();
+                    $obj = $json['objects'] ?? ($json['data'] ?? ($json['product'] ?? ($json['result'] ?? null)));
+                    if (!empty($obj) && is_array($obj)) {
+                        return $obj;
+                    }
                 }
+            } catch (\Exception $e) {
+                Log::info("Error fetching single Dropi product [{$endpoint}]: " . $e->getMessage());
+            }
+        }
+
+        // Fallback: Search in product catalog index by ID
+        try {
+            $res = $this->getProducts(10, 0, (string)$id);
+            if (!empty($res['products']) && is_array($res['products'])) {
+                foreach ($res['products'] as $prod) {
+                    if ((string)($prod['id'] ?? '') === (string)$id) {
+                        return $prod;
+                    }
+                }
+                return $res['products'][0] ?? null;
             }
         } catch (\Exception $e) {
-            Log::warning("Error fetching single Dropi product #{$id}: " . $e->getMessage());
+            // Ignore
         }
 
         return null;

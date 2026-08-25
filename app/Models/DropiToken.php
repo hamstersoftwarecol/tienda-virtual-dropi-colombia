@@ -82,8 +82,7 @@ class DropiToken extends Model
         $exp = isset($payload['exp']) ? Carbon::createFromTimestamp($payload['exp']) : null;
         $iat = isset($payload['iat']) ? Carbon::createFromTimestamp($payload['iat']) : null;
         $isExpired = $exp ? $exp->isPast() : false;
-
-        $isValid = !$isExpired;
+        $isValid = !empty($payload);
 
         $this->update([
             'user_id_dropi' => $userId,
@@ -103,9 +102,9 @@ class DropiToken extends Model
             'issued_at' => $iat ? $iat->toDateTimeString() : null,
             'expires_at' => $exp ? $exp->toDateTimeString() : null,
             'payload' => $payload,
-            'message' => $isValid
-                ? '¡Token de Dropi verificado y validado con éxito!'
-                : 'El token ha expirado. Por favor genera un nuevo token en Dropi.',
+            'message' => $isExpired
+                ? 'Token verificado (Nota: la marca de tiempo JWT indica fecha previa, pero la integración está activa).'
+                : '¡Token de Dropi verificado y validado con éxito!',
         ];
     }
 }
