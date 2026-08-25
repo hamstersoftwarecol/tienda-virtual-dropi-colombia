@@ -55,28 +55,45 @@
 
 <!-- Filters & Search Bar -->
 <div class="card border-0 shadow-sm rounded-4 bg-white p-3 mb-4">
-    <div class="row g-3 align-items-center justify-content-between">
+    <div class="row g-3 align-items-center">
         <!-- Search Input -->
-        <div class="col-md-6">
-            <form action="{{ route('admin.dropi.products.index') }}" method="GET" class="input-group">
-                <span class="input-group-text bg-light border-end-0 rounded-start-pill ps-3">
-                    <i class="bi bi-search text-muted"></i>
-                </span>
-                <input type="text" name="search" class="form-control bg-light border-start-0 rounded-end-pill" 
-                       placeholder="Buscar por palabra clave o nombre en la API de Dropi..." value="{{ $search }}">
+        <div class="col-lg-8">
+            <form action="{{ route('admin.dropi.products.index') }}" method="GET" class="d-flex gap-2">
+                <div class="input-group flex-grow-1">
+                    <span class="input-group-text bg-light border-end-0 rounded-start-pill ps-3">
+                        <i class="bi bi-search text-muted"></i>
+                    </span>
+                    <input type="text" name="search" class="form-control bg-light border-start-0 rounded-end-pill" 
+                           placeholder="Buscar en Dropi por nombre, palabra clave o ID (ej: waflera, reloj, audifonos, 2239206)..." value="{{ $search }}">
+                </div>
+                <button type="submit" class="btn btn-primary rounded-pill px-4 fw-bold flex-shrink-0">
+                    <i class="bi bi-search me-1"></i> Buscar
+                </button>
                 @if($search)
-                    <a href="{{ route('admin.dropi.products.index') }}" class="btn btn-light border rounded-pill ms-2">
+                    <a href="{{ route('admin.dropi.products.index') }}" class="btn btn-light border rounded-pill px-3 flex-shrink-0" title="Limpiar búsqueda">
                         <i class="bi bi-x-lg"></i>
                     </a>
                 @endif
             </form>
         </div>
 
-        <div class="col-md-6 text-md-end">
-            <a href="{{ route('admin.dropi.products.index') }}" class="btn btn-sm btn-outline-primary rounded-pill px-3">
-                <i class="bi bi-arrow-clockwise me-1"></i> Refrescar API Dropi
+        <div class="col-lg-4 text-lg-end">
+            <a href="{{ route('admin.dropi.products.index') }}" class="btn btn-outline-secondary rounded-pill px-3 btn-sm">
+                <i class="bi bi-arrow-clockwise me-1"></i> Recargar Catálogo
             </a>
         </div>
+    </div>
+
+    <!-- Quick Search Badges -->
+    <div class="d-flex flex-wrap align-items-center gap-1 mt-2 pt-2 border-top small">
+        <span class="text-muted me-1"><i class="bi bi-lightning-charge-fill text-warning"></i> Búsquedas populares:</span>
+        <a href="{{ route('admin.dropi.products.index', ['search' => 'waflera']) }}" class="badge bg-light text-dark border text-decoration-none rounded-pill px-2 py-1">waflera</a>
+        <a href="{{ route('admin.dropi.products.index', ['search' => 'reloj']) }}" class="badge bg-light text-dark border text-decoration-none rounded-pill px-2 py-1">reloj</a>
+        <a href="{{ route('admin.dropi.products.index', ['search' => 'audifonos']) }}" class="badge bg-light text-dark border text-decoration-none rounded-pill px-2 py-1">audífonos</a>
+        <a href="{{ route('admin.dropi.products.index', ['search' => 'licuadora']) }}" class="badge bg-light text-dark border text-decoration-none rounded-pill px-2 py-1">licuadora</a>
+        <a href="{{ route('admin.dropi.products.index', ['search' => 'sierra']) }}" class="badge bg-light text-dark border text-decoration-none rounded-pill px-2 py-1">sierra</a>
+        <a href="{{ route('admin.dropi.products.index', ['search' => 'tripode']) }}" class="badge bg-light text-dark border text-decoration-none rounded-pill px-2 py-1">trípode</a>
+        <a href="{{ route('admin.dropi.products.index', ['search' => 'consola']) }}" class="badge bg-light text-dark border text-decoration-none rounded-pill px-2 py-1">consola</a>
     </div>
 </div>
 
