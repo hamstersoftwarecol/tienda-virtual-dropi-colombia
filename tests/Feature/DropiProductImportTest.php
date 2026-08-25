@@ -112,4 +112,20 @@ class DropiProductImportTest extends TestCase
             'is_dropshipping' => true,
         ]);
     }
+
+    public function test_admin_can_access_dropi_products_with_empty_or_null_search(): void
+    {
+        Http::fake([
+            'https://api.dropi.co/integrations/products/index' => Http::response([
+                'isSuccess' => true,
+                'objects' => []
+            ], 200),
+        ]);
+
+        $response = $this->actingAs($this->admin)->get('/admin/dropi/products?search=');
+        $response->assertStatus(200);
+
+        $response2 = $this->actingAs($this->admin)->get('/admin/dropi/products?search=waflera');
+        $response2->assertStatus(200);
+    }
 }

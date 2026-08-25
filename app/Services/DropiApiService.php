@@ -49,7 +49,7 @@ class DropiApiService
     public function getProducts(
         int $perPage = 32,
         int $currentPage = 0,
-        string $search = '',
+        ?string $search = '',
         string $orderBy = 'id',
         string $order = 'DESC',
         ?string $categoryFilter = null

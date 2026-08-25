@@ -22,7 +22,7 @@ class DropiProductController extends Controller
     {
         $dropiToken = DropiToken::where('is_valid', true)->latest()->first() ?: DropiToken::latest()->first();
         $categories = Category::active()->get();
-        $search = $request->input('search', '');
+        $search = (string) ($request->input('search') ?? '');
         $selectedCategory = $request->input('category', 'all');
 
         // Fetch Dropi products catalog
