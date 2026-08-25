@@ -69,8 +69,7 @@ class DropiApiService
         $token = trim($tokenRecord->token);
         $storeName = $tokenRecord->store ?: 'Tienda 1';
         $endpoint = "https://api.dropi.co/integrations/products/index";
-
-        $cleanSearch = trim($search);
+        $cleanSearch = trim((string)$search);
 
         $postData = [
             'startData' => $currentPage,
@@ -78,8 +77,6 @@ class DropiApiService
             'order_type' => $order,
             'order_by' => $orderBy,
             'keywords' => $cleanSearch,
-            'keyword' => $cleanSearch,
-            'search' => $cleanSearch,
             'active' => true,
             'no_count' => true,
             'integration' => true,
@@ -95,47 +92,26 @@ class DropiApiService
 
         try {
             $response = Http::withHeaders($this->getWordPressHeaders($token))
-                ->timeout(25)
-                ->retry(2, 300)
+                ->timeout(60)
+                ->connectTimeout(15)
                 ->post($endpoint, $postData);
 
             $json = $response->json();
 
-            if ($response->successful() && !empty($json['isSuccess']) && isset($json['objects'])) {
-                $objects = is_array($json['objects']) ? $json['objects'] : [];
+            if ($response->successful() && !empty($json['isSuccess'])) {
+                $objects = is_array($json['objects'] ?? null) ? $json['objects'] : [];
                 $normalized = $this->normalizeDropiApiProducts($objects, $storeName);
-
-                // If searched by numeric ID and 0 results found via keyword search, try direct ID lookup
-                if (empty($normalized) && !empty($cleanSearch) && is_numeric($cleanSearch)) {
-                    $singleProd = $this->getProduct((int)$cleanSearch, $token);
-                    if ($singleProd) {
-                        $normalized = $this->normalizeDropiApiProducts([$singleProd], $storeName);
-                    }
-                }
 
                 return [
                     'success' => true,
                     'source' => 'api_live',
                     'products' => $normalized,
                     'total' => count($normalized),
-                    'message' => 'Productos sincronizados en tiempo real con la API oficial de Dropi Colombia.',
+                    'message' => empty($normalized) && !empty($cleanSearch) 
+                        ? "No se encontraron productos en Dropi con la palabra clave '{$cleanSearch}'."
+                        : 'Productos sincronizados en tiempo real con la API oficial de Dropi Colombia.',
                 ];
             } else {
-                // If searched by numeric ID and index returned error, try direct ID lookup
-                if (!empty($cleanSearch) && is_numeric($cleanSearch)) {
-                    $singleProd = $this->getProduct((int)$cleanSearch, $token);
-                    if ($singleProd) {
-                        $normalized = $this->normalizeDropiApiProducts([$singleProd], $storeName);
-                        return [
-                            'success' => true,
-                            'source' => 'api_live',
-                            'products' => $normalized,
-                            'total' => 1,
-                            'message' => 'Producto Dropi encontrado directamente por ID.',
-                        ];
-                    }
-                }
-
                 $errorMessage = $json['message'] ?? ($json['error'] ?? "Respuesta HTTP {$response->status()} de la API de Dropi.");
                 
                 return [
@@ -148,28 +124,13 @@ class DropiApiService
             }
         } catch (\Exception $e) {
             Log::warning('Dropi API connection exception: ' . $e->getMessage());
-
-            // If searched by numeric ID and connection failed, try direct ID lookup
-            if (!empty($cleanSearch) && is_numeric($cleanSearch)) {
-                $singleProd = $this->getProduct((int)$cleanSearch, $token);
-                if ($singleProd) {
-                    $normalized = $this->normalizeDropiApiProducts([$singleProd], $storeName);
-                    return [
-                        'success' => true,
-                        'source' => 'api_live',
-                        'products' => $normalized,
-                        'total' => 1,
-                        'message' => 'Producto Dropi encontrado directamente por ID.',
-                    ];
-                }
-            }
             
             return [
                 'success' => false,
                 'source' => 'connection_error',
                 'products' => [],
                 'total' => 0,
-                'message' => 'No se pudo conectar con el servidor de Dropi: ' . $e->getMessage(),
+                'message' => 'Tiempo de espera agotado al conectar con Dropi. Por favor recarga la página.',
             ];
         }
     }
@@ -192,7 +153,8 @@ class DropiApiService
 
         try {
             $response = Http::withHeaders($this->getWordPressHeaders($token))
-                ->timeout(10)
+                ->timeout(30)
+                ->connectTimeout(10)
                 ->get($endpoint);
 
             if ($response->successful()) {

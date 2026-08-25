@@ -97,26 +97,32 @@
     </div>
 </div>
 
-<!-- Alert status if API response message -->
-@if(!empty($apiMessage) && count($dropiProducts) === 0)
-    <div class="alert alert-info border-0 shadow-sm rounded-4 p-4 mb-4">
-        <div class="d-flex align-items-center gap-3">
-            <div class="bg-primary text-white rounded-circle p-3 fs-4">
-                <i class="bi bi-cloud-arrow-down"></i>
-            </div>
-            <div class="flex-grow-1">
-                <h5 class="fw-bold mb-1 text-primary">Estado de Sincronización Dropi API</h5>
-                <p class="small text-muted mb-2">{{ $apiMessage }}</p>
-                <div class="d-flex gap-2">
-                    <a href="{{ route('admin.dropi.settings') }}" class="btn btn-primary btn-sm rounded-pill px-3 fw-bold">
-                        <i class="bi bi-gear-fill me-1"></i> Verificar Token Dropi
-                    </a>
-                    <a href="{{ route('admin.dropi.products.index') }}" class="btn btn-outline-primary btn-sm rounded-pill px-3">
-                        <i class="bi bi-arrow-repeat me-1"></i> Reintentar Conexión
-                    </a>
-                </div>
-            </div>
+<!-- Alert status if API response message or empty search -->
+@if(count($dropiProducts) === 0)
+    <div class="card border-0 shadow-sm rounded-4 p-5 text-center mb-4 bg-white">
+        <div class="mx-auto mb-3" style="width: 80px; height: 80px; background: rgba(37, 99, 235, 0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+            <i class="bi bi-search text-primary fs-1"></i>
         </div>
+        @if(!empty($search))
+            <h5 class="fw-bold text-dark mb-1">Sin resultados para "{{ $search }}"</h5>
+            <p class="text-muted small mb-3">No encontramos productos en la API de Dropi con ese criterio. Prueba con un término más general.</p>
+            <div class="d-flex justify-content-center gap-2">
+                <a href="{{ route('admin.dropi.products.index') }}" class="btn btn-primary rounded-pill px-4 btn-sm fw-bold">
+                    <i class="bi bi-arrow-clockwise me-1"></i> Ver Catálogo Completo
+                </a>
+            </div>
+        @else
+            <h5 class="fw-bold text-dark mb-1">Sincronización con Dropi API</h5>
+            <p class="text-muted small mb-3">{{ $apiMessage ?: 'No se pudieron cargar productos en este momento.' }}</p>
+            <div class="d-flex justify-content-center gap-2">
+                <a href="{{ route('admin.dropi.settings') }}" class="btn btn-primary rounded-pill px-4 btn-sm fw-bold">
+                    <i class="bi bi-gear-fill me-1"></i> Configurar Token Dropi
+                </a>
+                <a href="{{ route('admin.dropi.products.index') }}" class="btn btn-outline-secondary rounded-pill px-4 btn-sm">
+                    <i class="bi bi-arrow-repeat me-1"></i> Reintentar
+                </a>
+            </div>
+        @endif
     </div>
 @endif
 
