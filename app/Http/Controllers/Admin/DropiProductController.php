@@ -87,4 +87,30 @@ class DropiProductController extends Controller
         $result = $this->dropiApi->importAll();
         return back()->with('success', $result['message']);
     }
+
+    public function syncStock(Request $request)
+    {
+        $result = $this->dropiApi->syncAllProductsStock();
+
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json($result);
+        }
+
+        return back()->with('success', $result['message']);
+    }
+
+    public function syncSingleStock(Product $product, Request $request)
+    {
+        $result = $this->dropiApi->syncProductStock($product);
+
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json($result);
+        }
+
+        if ($result['success']) {
+            return back()->with('success', $result['message']);
+        }
+
+        return back()->with('error', $result['message']);
+    }
 }

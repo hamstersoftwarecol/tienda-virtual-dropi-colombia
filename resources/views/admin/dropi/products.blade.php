@@ -37,6 +37,13 @@
 
             <div class="col-lg-5 text-lg-end">
                 <div class="d-flex flex-wrap justify-content-lg-end align-items-center gap-2">
+                    <form action="{{ route('admin.dropi.products.sync_stock') }}" method="POST" class="d-inline">
+                        @csrf
+                        <button type="submit" class="btn btn-outline-success rounded-pill px-3 py-2 shadow-sm btn-sm fw-semibold" title="Sincronizar stock con Dropi en tiempo real">
+                            <i class="bi bi-arrow-repeat me-1"></i> Sincronizar Stock
+                        </button>
+                    </form>
+
                     @if(count($dropiProducts) > 0)
                         <form action="{{ route('admin.dropi.products.import_all') }}" method="POST" onsubmit="return confirm('¿Importar todos los productos obtenidos de la API de Dropi a tu tienda?');" class="d-inline">
                             @csrf

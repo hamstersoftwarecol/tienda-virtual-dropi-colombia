@@ -93,6 +93,8 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/dropi/products', [AdminDropiProductController::class, 'index'])->name('dropi.products.index');
     Route::post('/dropi/products/import', [AdminDropiProductController::class, 'import'])->name('dropi.products.import');
     Route::post('/dropi/products/import-all', [AdminDropiProductController::class, 'importAll'])->name('dropi.products.import_all');
+    Route::post('/dropi/products/sync-stock', [AdminDropiProductController::class, 'syncStock'])->name('dropi.products.sync_stock');
+    Route::post('/dropi/products/{product}/sync-stock', [AdminDropiProductController::class, 'syncSingleStock'])->name('dropi.products.sync_single_stock');
 
     // Dropi Settings & Token Validation
     Route::get('/dropi/settings', [AdminDropiSettingController::class, 'index'])->name('dropi.settings');

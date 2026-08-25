@@ -211,25 +211,37 @@ class DropiApiService
         }
 
         $description = $dropiProduct['description'] ?? '';
+        
+        // Localize any images & animated GIFs inside the description
+        $description = $this->localizeDescriptionMedia($description, $dropiId);
         $shortDesc = Str::limit(strip_tags($description), 180);
 
-        // Images handling (CloudFront CDN)
+        // Images & GIFs handling - Download and store locally
         $images = [];
         $photoList = !empty($dropiProduct['photos']) ? $dropiProduct['photos'] : (!empty($dropiProduct['gallery']) ? $dropiProduct['gallery'] : []);
         
+        $imgIndex = 0;
         foreach ($photoList as $p) {
+            $imgIndex++;
             $urlS3 = is_array($p) ? ($p['urlS3'] ?? '') : (is_object($p) ? ($p->urlS3 ?? '') : '');
             $urlDirect = is_array($p) ? ($p['url'] ?? '') : (is_object($p) ? ($p->url ?? '') : (is_string($p) ? $p : ''));
 
+            $targetUrl = '';
             if (!empty($urlS3)) {
-                $images[] = Str::startsWith($urlS3, 'http') ? $urlS3 : "https://d39ru7awumhhs2.cloudfront.net/" . ltrim($urlS3, '/');
+                $targetUrl = Str::startsWith($urlS3, 'http') ? $urlS3 : "https://d39ru7awumhhs2.cloudfront.net/" . ltrim($urlS3, '/');
             } elseif (!empty($urlDirect)) {
-                $images[] = Str::startsWith($urlDirect, 'http') ? $urlDirect : "https://api.dropi.co/" . ltrim($urlDirect, '/');
+                $targetUrl = Str::startsWith($urlDirect, 'http') ? $urlDirect : "https://api.dropi.co/" . ltrim($urlDirect, '/');
+            }
+
+            if (!empty($targetUrl)) {
+                $localImgUrl = $this->downloadAndSaveDropiMedia($targetUrl, $dropiId, "gallery_{$imgIndex}");
+                $images[] = $localImgUrl;
             }
         }
 
         if (empty($images) && !empty($dropiProduct['image'])) {
-            $images[] = $dropiProduct['image'];
+            $localImgUrl = $this->downloadAndSaveDropiMedia($dropiProduct['image'], $dropiId, 'main');
+            $images[] = $localImgUrl;
         }
 
         $mainImage = $images[0] ?? 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=800';
@@ -275,7 +287,7 @@ class DropiApiService
                 'dropi_store' => $storeName,
                 'is_dropi_product' => true,
                 'is_dropshipping' => true,
-                'is_active' => true,
+                'is_active' => ($stock > 0),
             ]);
 
             $this->notifyDropiImport($dropiId, $product->id, $token);
@@ -284,7 +296,7 @@ class DropiApiService
                 'success' => true,
                 'action' => 'updated',
                 'product' => $product,
-                'message' => "¡Producto '{$product->name}' (Dropi ID #{$dropiId}) actualizado con éxito en tu tienda!",
+                'message' => "¡Producto '{$product->name}' (Dropi ID #{$dropiId}) actualizado con éxito en tu tienda con imágenes/GIFs descargados y stock sincronizado ({$stock} unid.)!",
             ];
         }
 
@@ -309,7 +321,7 @@ class DropiApiService
             'stock' => $stock,
             'image' => $mainImage,
             'images' => $images ?: [$mainImage],
-            'is_active' => true,
+            'is_active' => ($stock > 0),
         ]);
 
         $this->notifyDropiImport($dropiId, $product->id, $token);
@@ -318,7 +330,167 @@ class DropiApiService
             'success' => true,
             'action' => 'created',
             'product' => $product,
-            'message' => "¡Producto '{$product->name}' importado con éxito desde Dropi a tu tienda!",
+            'message' => "¡Producto '{$product->name}' importado con éxito desde Dropi con imágenes/GIFs locales y stock de {$stock} unidades!",
+        ];
+    }
+
+    /**
+     * Download and store image or animated GIF locally
+     */
+    public function downloadAndSaveDropiMedia(string $url, string|int $dropiId, string $prefix = 'media'): string
+    {
+        if (empty($url) || !Str::startsWith($url, ['http://', 'https://'])) {
+            return $url;
+        }
+
+        try {
+            $response = Http::timeout(15)->connectTimeout(5)->get($url);
+            if ($response->successful()) {
+                $contentType = strtolower($response->header('Content-Type') ?? '');
+                
+                // Detect extension (GIF, WebP, PNG, JPG)
+                $ext = 'jpg';
+                if (str_contains($contentType, 'gif') || str_ends_with(strtolower(parse_url($url, PHP_URL_PATH) ?? ''), '.gif')) {
+                    $ext = 'gif';
+                } elseif (str_contains($contentType, 'webp') || str_ends_with(strtolower(parse_url($url, PHP_URL_PATH) ?? ''), '.webp')) {
+                    $ext = 'webp';
+                } elseif (str_contains($contentType, 'png') || str_ends_with(strtolower(parse_url($url, PHP_URL_PATH) ?? ''), '.png')) {
+                    $ext = 'png';
+                } elseif (str_contains($contentType, 'jpeg') || str_contains($contentType, 'jpg')) {
+                    $ext = 'jpg';
+                }
+
+                $filename = "{$prefix}_" . substr(md5($url), 0, 10) . ".{$ext}";
+                $storagePath = "products/{$dropiId}/{$filename}";
+
+                \Illuminate\Support\Facades\Storage::disk('public')->put($storagePath, $response->body());
+                return "/storage/{$storagePath}";
+            }
+        } catch (\Exception $e) {
+            Log::warning("Could not download Dropi media [{$url}]: " . $e->getMessage());
+        }
+
+        // Fallback to remote URL if download fails
+        return $url;
+    }
+
+    /**
+     * Parse HTML description and download all embedded images/GIFs locally
+     */
+    public function localizeDescriptionMedia(string $html, string|int $dropiId): string
+    {
+        if (empty($html)) {
+            return $html;
+        }
+
+        return preg_replace_callback('/<img[^>]+src=["\']([^"\']+)["\']/i', function ($matches) use ($dropiId) {
+            $originalSrc = $matches[1];
+            if (Str::startsWith($originalSrc, ['http://', 'https://'])) {
+                $localSrc = $this->downloadAndSaveDropiMedia($originalSrc, $dropiId, 'desc');
+                return str_replace($originalSrc, $localSrc, $matches[0]);
+            }
+            return $matches[0];
+        }, $html);
+    }
+
+    /**
+     * Alias for getProduct
+     */
+    public function getProductById(string|int $id, ?string $token = null): ?array
+    {
+        return $this->getProduct($id, $token);
+    }
+
+    /**
+     * Synchronize stock for a single Dropi product
+     */
+    public function syncProductStock(Product $product): array
+    {
+        if (empty($product->dropi_id)) {
+            return [
+                'success' => false,
+                'message' => "El producto '{$product->name}' no está vinculado a Dropi.",
+            ];
+        }
+
+        $dropiData = $this->getProduct($product->dropi_id);
+        if (empty($dropiData)) {
+            return [
+                'success' => false,
+                'message' => "No se pudo obtener la información actualizada de Dropi para el producto ID #{$product->dropi_id}.",
+            ];
+        }
+
+        // Calculate latest stock
+        $newStock = 0;
+        if (!empty($dropiData['warehouse_product']) && is_array($dropiData['warehouse_product'])) {
+            foreach ($dropiData['warehouse_product'] as $w) {
+                $newStock += (int) ($w['stock'] ?? 0);
+            }
+        } elseif (isset($dropiData['stock'])) {
+            $newStock = (int) $dropiData['stock'];
+        }
+
+        $previousStock = $product->stock;
+        $product->stock = max(0, $newStock);
+        
+        // Update wholesale and suggested prices if provided
+        if (!empty($dropiData['sale_price']) || !empty($dropiData['price'])) {
+            $wholesale = (float) ($dropiData['sale_price'] ?? $dropiData['price']);
+            if ($wholesale > 0) {
+                $product->wholesale_price = $wholesale;
+                $product->suggested_price = (float) ($dropiData['suggested_price'] ?? ($wholesale * 1.5));
+                $product->profit_margin = max(0, $product->price - $wholesale);
+            }
+        }
+
+        $product->save();
+
+        $statusMessage = ($product->stock === 0)
+            ? "⚠️ El producto '{$product->name}' se encuentra AGOTADO en Dropi (Stock: 0)."
+            : "✅ Stock actualizado para '{$product->name}': {$product->stock} unidades disponibles.";
+
+        return [
+            'success' => true,
+            'product_id' => $product->id,
+            'name' => $product->name,
+            'dropi_id' => $product->dropi_id,
+            'previous_stock' => $previousStock,
+            'current_stock' => $product->stock,
+            'is_in_stock' => $product->stock > 0,
+            'message' => $statusMessage,
+        ];
+    }
+
+    /**
+     * Synchronize stock for all imported Dropi products in the store
+     */
+    public function syncAllProductsStock(): array
+    {
+        $products = Product::whereNotNull('dropi_id')->get();
+        $total = $products->count();
+        $synced = 0;
+        $outOfStock = 0;
+        $details = [];
+
+        foreach ($products as $prod) {
+            $res = $this->syncProductStock($prod);
+            if ($res['success']) {
+                $synced++;
+                if (($res['current_stock'] ?? 0) === 0) {
+                    $outOfStock++;
+                }
+                $details[] = $res;
+            }
+        }
+
+        return [
+            'success' => true,
+            'total_products' => $total,
+            'synced_count' => $synced,
+            'out_of_stock_count' => $outOfStock,
+            'details' => $details,
+            'message' => "Sincronización completada: {$synced} productos actualizados. ({$outOfStock} agotados en Dropi).",
         ];
     }
 

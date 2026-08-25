@@ -9,9 +9,20 @@
         <h4 class="fw-bold mb-1 text-dark">Productos Registrados</h4>
         <p class="text-muted small mb-0">Administra precios en pesos colombianos, existencias, imágenes y estado.</p>
     </div>
-    <a href="{{ route('admin.products.create') }}" class="btn btn-primary rounded-pill px-3 shadow-sm">
-        <i class="bi bi-plus-lg me-1"></i> Crear Producto
-    </a>
+    <div class="d-flex gap-2">
+        <form action="{{ route('admin.dropi.products.sync_stock') }}" method="POST" class="d-inline">
+            @csrf
+            <button type="submit" class="btn btn-outline-success rounded-pill px-3 shadow-sm fw-semibold" title="Sincronizar stock con Dropi en tiempo real">
+                <i class="bi bi-arrow-repeat me-1"></i> Sincronizar Stock Dropi
+            </button>
+        </form>
+        <a href="{{ route('admin.dropi.products.index') }}" class="btn btn-warning text-dark fw-bold rounded-pill px-3 shadow-sm">
+            <i class="bi bi-cloud-arrow-down-fill me-1"></i> Catálogo Dropi
+        </a>
+        <a href="{{ route('admin.products.create') }}" class="btn btn-primary rounded-pill px-3 shadow-sm">
+            <i class="bi bi-plus-lg me-1"></i> Crear Producto
+        </a>
+    </div>
 </div>
 
 <!-- Filters & Search Bar -->
@@ -110,6 +121,14 @@
                         </td>
                         <td class="pe-4 py-3 text-end">
                             <div class="btn-group btn-group-sm">
+                                @if($product->dropi_id)
+                                    <form action="{{ route('admin.dropi.products.sync_single_stock', $product->id) }}" method="POST" class="d-inline">
+                                        @csrf
+                                        <button type="submit" class="btn btn-outline-success" title="Sincronizar Stock con Dropi">
+                                            <i class="bi bi-arrow-repeat"></i>
+                                        </button>
+                                    </form>
+                                @endif
                                 <a href="{{ route('shop.show', $product->slug) }}" target="_blank" class="btn btn-outline-secondary" title="Ver en tienda">
                                     <i class="bi bi-eye"></i>
                                 </a>
