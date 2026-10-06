@@ -27,3 +27,19 @@ Thumbs.db
 database/database.sqlite
 database/database.sqlite-journal
 *.zip
+
+# Server / cPanel runtime & logs
+error_log
+*/error_log
+.well-known/
+composer.phar
+resource/
+
+# Root copies of public files generated during cPanel deployment
+/.htaccess
+/index.php
+/test-php.php
+/cpanel-setup.php
+/robots.txt
+/favicon.ico
+/build/

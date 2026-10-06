@@ -1,4 +1,4 @@
-# 🛍️ NovaStore Colombia — Tienda Virtual en Laravel 12 + Breeze + Bootstrap 5
+# 🛍️ Tienda Virtual + Integraciones con Dropi Colombia (Laravel 12 + Bootstrap 5)
 
 [![Laravel Version](https://img.shields.io/badge/Laravel-12.x-FF2D20?style=for-the-badge&logo=laravel&logoColor=white)](https://laravel.com)
 [![Bootstrap Version](https://img.shields.io/badge/Bootstrap-5.3-7952B3?style=for-the-badge&logo=bootstrap&logoColor=white)](https://getbootstrap.com)

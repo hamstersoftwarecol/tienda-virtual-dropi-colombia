@@ -2,7 +2,7 @@
     "$schema": "https://getcomposer.org/schema.json",
     "name": "laravel/laravel",
     "type": "project",
-    "description": "The skeleton application for the Laravel framework.",
+    "description": "Tienda virtual con integración Dropi Colombia y emulación WooCommerce REST API v3 en Laravel 12",
     "keywords": ["laravel", "framework"],
     "license": "MIT",
     "require": {
