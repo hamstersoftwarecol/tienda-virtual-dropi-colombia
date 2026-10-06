@@ -45,8 +45,8 @@ Plataforma de comercio electrónico de alto rendimiento desarrollada en **Larave
 
 ```bash
 # 1. Clonar el repositorio
-git clone https://github.com/soyalejandrolopez/novastore-colombia.git
-cd novastore-colombia
+git clone https://github.com/soyalejandrolopez/tienda-virtual-dropi-colombia.git
+cd tienda-virtual-dropi-colombia
 
 # 2. Instalar dependencias PHP
 composer install
